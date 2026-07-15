@@ -34,7 +34,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Version string = "v0.15.05"
+var Version string = "v0.15.07"
 var PublishDate string = "2026-07-15"
 var FANART_API_KEY = ""
 var DEFAULT_TMDB_ACCESS_TOKEN = ""
@@ -537,10 +537,6 @@ func setRouter(r *gin.Engine) {
 		api.GET("/baidupan/status", controllers.GetBaiDuPanStatus)                // 查询百度网盘状态
 
 		api.GET("/user/info", controllers.GetUserInfo)
-		api.GET("/path/list", controllers.GetPathList)     // 目录列表
-		api.POST("/path/create", controllers.CreateDir)    // 创建目录接口
-		api.DELETE("/path", controllers.DeleteDir)         // 删除目录接口
-		api.GET("/path/files", controllers.GetNetFileList) // 查询网盘文件列表
 		api.POST("/user/change", controllers.ChangePassword)
 
 		api.POST("/setting/http-proxy", controllers.UpdateHttpProxy)    // 更改HTTP代理
@@ -598,7 +594,6 @@ func setRouter(r *gin.Engine) {
 		api.POST("/sync/delete-records", controllers.DelSyncRecords)     // 批量删除同步记录
 		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath) // 关闭或开启同步目录的定时同步
 		api.GET("/sync/path/:id", controllers.GetSyncPathById)           // 获取同步路径详情
-		api.POST("/sync/manual", controllers.ManualSync)                 // 手动同步
 
 		api.GET("/account/list", controllers.GetAccountList)             // 获取开放平台账号列表
 		api.POST("/account/add", controllers.CreateTmpAccount)           // 创建开放平台账号
@@ -771,7 +766,7 @@ func parseParams() {
 
 // @title QMediaSync API
 // @version 1.0
-// @description 媒体同步和刮削系统API
+// @description 媒体同步系统API
 // @host localhost:8115
 // @BasePath /
 // @securityDefinitions.apikey JwtAuth

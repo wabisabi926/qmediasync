@@ -4,8 +4,6 @@ import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/synccron"
-	"Q115-STRM/internal/v115open"
-	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -616,74 +614,5 @@ func FullStart115Sync(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "同步任务已添加到队列", Data: nil})
-}
-
-// 从网盘文件管理器手动触发同步
-func ManualSync(c *gin.Context) {
-	type manualSyncRequest struct {
-		PathId     string `form:"path_id" json:"path_id" binding:"required"`         // 文件ID
-		Path       string `form:"path" json:"path"`                                  // 路径
-		TargetPath string `form:"target_path" json:"target_path" binding:"required"` // 目标路径
-		IsFile     bool   `form:"is_file" json:"is_file"`                            // 是否文件
-		AccountId  uint   `form:"account_id" json:"account_id" binding:"required"`   // 账号ID
-	}
-	var req manualSyncRequest
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: fmt.Sprintf("请求参数错误: %v", err), Data: nil})
-		return
-	}
-	if req.PathId == "" {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "path_id 参数不能为空", Data: nil})
-		return
-	}
-	account, err := models.GetAccountById(req.AccountId)
-	if err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "账号不存在", Data: nil})
-		return
-	}
-	if req.Path == "" {
-		// 使用文件ID查询详情
-		switch account.SourceType {
-		case models.SourceType115:
-			client := account.Get115Client()
-			// 115网盘文件详情接口
-			fileDetail, err := client.GetFsDetailByCid(context.Background(), req.PathId)
-			if err != nil {
-				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取文件详情失败: " + err.Error(), Data: nil})
-				return
-			}
-			req.Path = fileDetail.Path
-			req.IsFile = fileDetail.FileCategory == v115open.TypeFile
-		case models.SourceTypeBaiduPan:
-			client := account.GetBaiDuPanClient()
-			// 百度网盘文件详情接口
-			fileDetail, err := client.FileExists(context.Background(), req.PathId)
-			if err != nil {
-				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取文件详情失败: " + err.Error(), Data: nil})
-				return
-			}
-			req.Path = fileDetail.Path
-			req.IsFile = fileDetail.IsDir == 0
-		default:
-			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "不支持的文件类型", Data: nil})
-			return
-		}
-	}
-	// 手动触发同步
-	taskObj := &synccron.NewSyncTask{
-		ID:           0,
-		TaskType:     synccron.SyncTaskTypeStrm,
-		SourcePath:   req.Path,
-		SourcePathId: req.PathId,
-		TargetPath:   req.TargetPath,
-		IsFile:       req.IsFile,
-		SourceType:   account.SourceType,
-		AccountId:    req.AccountId,
-	}
-	if err := synccron.AddNewSyncTask(taskObj); err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "添加同步任务失败: " + err.Error(), Data: nil})
-		return
-	}
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "同步任务已添加到队列", Data: nil})
 }

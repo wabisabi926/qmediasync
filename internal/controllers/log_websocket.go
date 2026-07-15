@@ -38,7 +38,7 @@ func parseLogLine(line string) LogEntry {
 		Timestamp: time.Now().Format("2006-01-02 15:04:05.000000"),
 	}
 
-	// 解析日志格式：2025/11/29 12:33:09.530499 [INFO] 开始处理同步任务: 类型=刮削整理, ID=2
+	// 解析日志格式：2025/11/29 12:33:09.530499 [INFO] 开始处理同步任务: 类型=STRM生成, ID=2
 	// 正则表达式匹配日志格式
 	pattern := `^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{6}) \[(\w+)\] (.+)$`
 	regex := regexp.MustCompile(pattern)

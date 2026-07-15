@@ -214,6 +214,14 @@ func IsFnOS(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "", Data: helpers.IsFnOS})
 }
 
+func UpdateFNPath(c *gin.Context) {
+	path := c.PostForm("path")
+	if path != "" {
+		helpers.AccessiblePathes = path
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "", Data: nil})
+}
+
 func RepairDB(c *gin.Context) {
 	// 修复数据库，重建所有表
 	err := models.BatchCreateTable()
