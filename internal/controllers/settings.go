@@ -436,15 +436,12 @@ func ValidateCron(c *gin.Context) {
 		return
 	}
 
-	// 验证Cron表达式
-	scrapePath := &models.ScrapePath{}
-	if !scrapePath.ValidateCronExpression(req.CronExpression) {
+	if !synccron.ValidateCronExpression(req.CronExpression) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "无效的Cron表达式", Data: nil})
 		return
 	}
 
-	// 解析Cron表达式为人类可读的描述
-	description := scrapePath.ParseCronDescription(req.CronExpression)
+	description := synccron.ParseCronDescription(req.CronExpression)
 
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "验证成功", Data: map[string]string{
 		"description": description,

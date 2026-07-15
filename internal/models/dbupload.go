@@ -25,30 +25,26 @@ const (
 type UploadSource string
 
 const (
-	UploadSourceStrm   UploadSource = "strm同步"
-	UploadSourceScrape UploadSource = "刮削整理"
+	UploadSourceStrm UploadSource = "strm同步"
 )
 
 type DbUploadTask struct {
 	BaseModel
-	Source               UploadSource     `json:"source"` // 任务来源
-	AccountId            uint             `json:"account_id"`
-	SyncFileId           uint             `json:"sync_file_id"`                                     // 同步文件ID
-	ScrapeMediaFileId    uint             `json:"scrape_media_file_id"`                             // 刮削文件ID
-	SourceType           SourceType       `json:"source_type"`                                      // 任务来源类型
-	LocalFullPath        string           `json:"local_full_path" gorm:"index:idx_local_full_path"` // 本地完整文件路径，包含文件名
-	RemoteFileId         string           `json:"remote_file_id" gorm:"index:idx_remote_file_id"`   // 远程文件ID，包含完整路径
-	RemotePathId         string           `json:"remote_path_id"`                                   // 父目录CID，如果115就是文件夹ID，如果是openlist就是父文件夹路径
-	FileName             string           `json:"file_name"`                                        // 要上传的文件名
-	Status               UploadStatus     `json:"status" gorm:"index:idx_status_new"`               // 任务状态
-	FileSize             int64            `json:"file_size"`                                        // 文件大小
-	Error                string           `json:"error"`                                            // 错误信息
-	StartTime            int64            `json:"start_time"`                                       // 开始时间
-	EndTime              int64            `json:"end_time"`                                         // 结束时间
-	IsSeasonOrTvshowFile bool             `json:"is_season_or_tvshow_file"`                         // 是否是剧集或电视剧文件
-	SyncFile             *SyncFile        `json:"-" gorm:"-"`                                       // 同步文件
-	ScrapeMediaFile      *ScrapeMediaFile `json:"-" gorm:"-"`                                       // 刮削文件
-	Account              *Account         `json:"-" gorm:"-"`                                       // 账户
+	Source        UploadSource `json:"source"` // 任务来源
+	AccountId     uint         `json:"account_id"`
+	SyncFileId    uint         `json:"sync_file_id"`                                     // 同步文件ID
+	SourceType    SourceType   `json:"source_type"`                                      // 任务来源类型
+	LocalFullPath string       `json:"local_full_path" gorm:"index:idx_local_full_path"` // 本地完整文件路径，包含文件名
+	RemoteFileId  string       `json:"remote_file_id" gorm:"index:idx_remote_file_id"`   // 远程文件ID，包含完整路径
+	RemotePathId  string       `json:"remote_path_id"`                                   // 父目录CID，如果115就是文件夹ID，如果是openlist就是父文件夹路径
+	FileName      string       `json:"file_name"`                                        // 要上传的文件名
+	Status        UploadStatus `json:"status" gorm:"index:idx_status_new"`               // 任务状态
+	FileSize      int64        `json:"file_size"`                                        // 文件大小
+	Error         string       `json:"error"`                                            // 错误信息
+	StartTime     int64        `json:"start_time"`                                       // 开始时间
+	EndTime       int64        `json:"end_time"`                                         // 结束时间
+	SyncFile      *SyncFile    `json:"-" gorm:"-"`                                       // 同步文件
+	Account       *Account     `json:"-" gorm:"-"`                                       // 账户
 }
 
 // String 返回状态的字符串表示
@@ -152,16 +148,6 @@ func (task *DbUploadTask) Upload() {
 	}
 	// 标记为已完成
 	task.Complete()
-	// 如果是刮削类型,需要进行后续通知
-	if task.Source == UploadSourceScrape {
-		// 通知刮削整理完成
-		scrapeMediaFile := GetScrapeMediaFileById(task.ScrapeMediaFileId)
-		if scrapeMediaFile == nil {
-			helpers.AppLogger.Errorf("刮削文件 %d 不存在", task.ScrapeMediaFileId)
-			return
-		}
-		scrapeMediaFile.RemoveTmpFiles(task)
-	}
 }
 
 func (task *DbUploadTask) Upload115File() bool {
@@ -191,18 +177,6 @@ func (task *DbUploadTask) Upload115File() bool {
 
 	if existsErr == nil && detail.FileId != "" {
 		if task.Source == UploadSourceStrm {
-			return true
-		}
-		if task.Source == UploadSourceScrape {
-			// 回调
-			scrapeMediaFile := GetScrapeMediaFileById(task.ScrapeMediaFileId)
-			if scrapeMediaFile == nil {
-				helpers.AppLogger.Errorf("刮削文件 %d 不存在", task.ScrapeMediaFileId)
-				task.Fail(fmt.Errorf("同步文件 %d 不存在", task.SyncFileId))
-				return false
-			}
-			helpers.AppLogger.Infof("回调刮削整理：刮削文件 %d 上传成功, 文件ID: %s", task.ScrapeMediaFileId, task.RemoteFileId)
-			scrapeMediaFile.RemoveTmpFiles(task)
 			return true
 		}
 	}
@@ -401,41 +375,6 @@ func AddUploadTaskFromSyncFile(file *SyncFile) error {
 	return nil
 }
 
-// 添加刮削整理产生的上传任务
-func AddUploadTaskFromMediaFile(mediaFile *ScrapeMediaFile, scrapePath *ScrapePath, fileName, localFullPath, remoteFileId, remotePathId string, isSeasonOrTvshowFile bool) error {
-	stat, err := os.Stat(localFullPath)
-	if err != nil {
-		helpers.AppLogger.Errorf("要上传的文件 %s 无法获取到文件信息，错误：%vs", localFullPath, err.Error())
-		return err
-	}
-	size := stat.Size()
-	// 先检查是否存在
-	if task := CheckUploadTaskExist(UploadSourceScrape, remoteFileId); task != nil {
-		if task.Status == UploadStatusPending {
-			return errors.New("任务已存在，状态为待上传")
-		}
-		if task.Status == UploadStatusUploading {
-			return errors.New("任务已存在，状态为上传中")
-		}
-	}
-	// 插入新纪录
-	task := &DbUploadTask{
-		AccountId:            scrapePath.AccountId,
-		ScrapeMediaFileId:    mediaFile.ID,
-		SourceType:           scrapePath.SourceType,
-		RemoteFileId:         remoteFileId,
-		FileName:             fileName,
-		RemotePathId:         remotePathId,
-		LocalFullPath:        localFullPath,
-		Source:               UploadSourceScrape,
-		Status:               UploadStatusPending,
-		FileSize:             size,
-		IsSeasonOrTvshowFile: isSeasonOrTvshowFile,
-	}
-	derr := db.Db.Save(task).Error
-	return derr
-}
-
 func GetPendingUploadTasks(limit int) []*DbUploadTask {
 	var tasks []*DbUploadTask
 	db.Db.Model(&DbUploadTask{}).
@@ -535,12 +474,4 @@ func RetryFailedUploadTasks() error {
 		helpers.AppLogger.Infof("重试失败的上传任务成功")
 	}
 	return err
-}
-
-func GetUnFinishUploadTaskCountByScrapeMediaId(scrapeMediaFileId uint) int64 {
-	var count int64
-	db.Db.Model(&DbUploadTask{}).
-		Where("scrape_media_file_id = ? AND status IN (?, ?)", scrapeMediaFileId, UploadStatusPending, UploadStatusUploading).
-		Count(&count)
-	return count
 }

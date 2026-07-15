@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -618,54 +617,6 @@ func FullStart115Sync(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "同步任务已添加到队列", Data: nil})
-}
-
-func SaveRelScrapePath(c *gin.Context) {
-	type saveScrapePathRequest struct {
-		ID           uint   `form:"id" json:"id" binding:"required"`                         // 同步路径ID
-		ScrapePathId []uint `form:"scrape_path_id" json:"scrape_path_id" binding:"required"` // 刮削路径ID
-	}
-	var req saveScrapePathRequest
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "请求参数错误", Data: nil})
-		return
-	}
-	if req.ID == 0 {
-		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "id 参数不能为空", Data: nil})
-		return
-	}
-	syncPath := models.GetSyncPathById(req.ID)
-	if syncPath == nil {
-		c.JSON(http.StatusNotFound, APIResponse[any]{Code: BadRequest, Message: "同步路径不存在", Data: nil})
-		return
-	}
-	// 保存关联的刮削路径
-	if err := syncPath.SaveScrapePaths(req.ScrapePathId); err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "保存关联的刮削路径失败: " + err.Error(), Data: nil})
-		return
-	}
-	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "关联的刮削路径保存成功", Data: nil})
-}
-
-func GetRelScrapePath(c *gin.Context) {
-	idStr := c.Param("id")
-	if idStr == "" {
-		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "id 参数不能为空", Data: nil})
-		return
-	}
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "id 参数格式错误", Data: nil})
-		return
-	}
-	syncPath := models.GetSyncPathById(uint(id))
-	if syncPath == nil {
-		c.JSON(http.StatusNotFound, APIResponse[any]{Code: BadRequest, Message: "同步路径不存在", Data: nil})
-		return
-	}
-	// 获取关联的刮削路径
-	scrapePathIds := syncPath.GetScrapePathIds()
-	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "关联的刮削路径获取成功", Data: scrapePathIds})
 }
 
 // 从网盘文件管理器手动触发同步

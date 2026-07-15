@@ -34,14 +34,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Version string = "v0.0.1"
-var PublishDate string = "2025-08-08"
+var Version string = "v0.15.05"
+var PublishDate string = "2026-07-15"
 var FANART_API_KEY = ""
 var DEFAULT_TMDB_ACCESS_TOKEN = ""
 var DEFAULT_TMDB_API_KEY = ""
 var DEFAULT_SC_API_KEY = ""
 var ENCRYPTION_KEY = ""
-var Update bool = false
 
 var AppName string = "QMediaSync"
 var QMSApp *App
@@ -433,7 +432,6 @@ func initOthers() {
 		qps = 2
 	}
 	v115open.SetGlobalExecutorConfig(qps, qps*60, qps*3600)
-	models.LoadScrapeSettings()          // 从数据库加载刮削设置
 	models.InitDQ()                      // 初始化下载队列
 	models.InitUQ()                      // 初始化上传队列
 	models.InitNotificationManager()     // 初始化通知管理器
@@ -465,51 +463,17 @@ func initOthers() {
 	wsHub := websocket.NewEventHub()
 	websocket.GlobalEventHub = wsHub
 	go wsHub.Run()
-	synccron.InitCron()       // 初始化定时任务（包含备份定时任务）
-	synccron.InitSyncCron()   // 初始化同步目录的定时任务
-	synccron.InitScrapeCron() // 初始化刮削目录的自定义定时任务
-	synccron.InitTokenCron()  // 初始化定时刷新115的访问凭证
+	synccron.InitCron()      // 初始化定时任务（包含备份定时任务）
+	synccron.InitSyncCron()  // 初始化同步目录的定时任务
+	synccron.InitTokenCron() // 初始化定时刷新115的访问凭证
 	// 初始化备份服务
 	models.InitBackupService()
-	// 将所有刮削中和整理中的记录改为未执行
-	models.ResetScrapePathStatus()
-	// 将所有刮削中改为待刮削
-	models.UpdateScrapeMediaStatus(models.ScrapeMediaStatusScraping, models.ScrapeMediaStatusScanned, 0)
-	// 将所有整理中的记录改为待整理
-	models.UpdateScrapeMediaStatus(models.ScrapeMediaStatusRenaming, models.ScrapeMediaStatusScraped, 0)
 	// 上传中的任务改为待上传
 	models.UpdateUploadingToPending()
 	// 下载中的任务改为待下载
 	models.UpdateDownloadingToPending()
 	helpers.Subscribe(helpers.BackupCronEevent, func(event helpers.Event) {
 		backup.Backup("定时", "定时备份")
-	})
-	helpers.Subscribe(helpers.StrmSyncCompleteEvent, func(event helpers.Event) {
-		// 触发关联的刮削任务
-		scrapePathIds := event.Data.([]uint)
-		// 将任务添加到队列中
-		for _, scrapePathId := range scrapePathIds {
-			scrapePath := models.GetScrapePathByID(scrapePathId)
-			if scrapePath == nil {
-				helpers.AppLogger.Errorf("获取刮削目录失败: %v", scrapePathId)
-				continue
-			}
-			taskObj := &synccron.NewSyncTask{
-				ID:           scrapePathId,
-				SourcePath:   "",
-				SourcePathId: "",
-				TargetPath:   "",
-				AccountId:    scrapePath.AccountId,
-				SourceType:   scrapePath.SourceType,
-				IsFile:       false,
-				TaskType:     synccron.SyncTaskTypeScrape,
-			}
-			if err := synccron.AddNewSyncTask(taskObj); err != nil {
-				helpers.AppLogger.Errorf("添加刮削任务失败: %v", err)
-			} else {
-				helpers.AppLogger.Infof("创建刮削任务成功并已添加到执行队列，刮削目录ID: %d，", scrapePathId)
-			}
-		}
 	})
 }
 
@@ -535,12 +499,10 @@ func setRouter(r *gin.Engine) {
 
 	r.GET("/proxy-115", controllers.Proxy115) // 115CDN反代路由
 
-	r.GET("/api/scrape/tmp-image", controllers.ScrapeTmpImage)           // 获取临时图片
-	r.GET("/api/scrape/records/export", controllers.ExportScrapeRecords) // 导出刮削记录
-	r.GET("/api/logs/ws", controllers.LogWebSocket)                      // WebSocket日志查看
-	r.GET("/api/events/ws", controllers.EventWebSocket)                  // WebSocket事件推送
-	r.GET("/api/logs/old", controllers.GetOldLogs)                       // HTTP获取旧日志
-	r.GET("/api/logs/download", controllers.DownloadLogFile)             // 下载日志文件
+	r.GET("/api/logs/ws", controllers.LogWebSocket)          // WebSocket日志查看
+	r.GET("/api/events/ws", controllers.EventWebSocket)      // WebSocket事件推送
+	r.GET("/api/logs/old", controllers.GetOldLogs)           // HTTP获取旧日志
+	r.GET("/api/logs/download", controllers.DownloadLogFile) // 下载日志文件
 
 	r.POST("/api/update-fn-access-path", controllers.UpdateFNPath) // 更新Fn访问路径
 	r.GET("/api/path/is-fn-os", controllers.IsFnOS)                // 查询是否是飞牛环境
@@ -557,27 +519,22 @@ func setRouter(r *gin.Engine) {
 			})
 		})
 		api.POST("/database/delete-all-table", controllers.DeleteAllTabble) // 删除所有表
-		api.GET("/announce", controllers.GetAnnounce)                       // 获取公告
-		api.POST("/database/repair", controllers.RepairDB)                  // 更新系统设置
-		api.POST("/auth/115-qrcode-open", controllers.GetLoginQrCodeOpen)   // 获取115开放平台登录二维码
-		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)    // 查询115二维码扫码状态
-		api.GET("/115/status", controllers.Get115Status)                    // 查询115状态
-		api.GET("/115/oauth-url", controllers.GetOAuthUrl)                  // 获取115 OAuth登录地址
-		api.POST("115/oauth-confirm", controllers.ConfirmOAuthCode)         // 确认OAuth登录
-		api.GET("/115/queue/stats", controllers.GetQueueStats)              // 获取115 OpenAPI请求队列统计数据
-		api.POST("/115/queue/rate-limit", controllers.SetQueueRateLimit)    // 设置115 OpenAPI请求队列速率限制
-		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)       // 获取115请求统计（按天）
-		api.GET("/115/stats/hourly", controllers.GetRequestStatsByHour)     // 获取115请求统计（按小时）
-		api.POST("/115/stats/clean", controllers.CleanOldRequestStats)      // 清理旧的请求统计数据
+
+		api.POST("/database/repair", controllers.RepairDB)                // 更新系统设置
+		api.POST("/auth/115-qrcode-open", controllers.GetLoginQrCodeOpen) // 获取115开放平台登录二维码
+		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)  // 查询115二维码扫码状态
+		api.GET("/115/status", controllers.Get115Status)                  // 查询115状态
+		api.GET("/115/oauth-url", controllers.GetOAuthUrl)                // 获取115 OAuth登录地址
+		api.POST("115/oauth-confirm", controllers.ConfirmOAuthCode)       // 确认OAuth登录
+		api.GET("/115/queue/stats", controllers.GetQueueStats)            // 获取115 OpenAPI请求队列统计数据
+		api.POST("/115/queue/rate-limit", controllers.SetQueueRateLimit)  // 设置115 OpenAPI请求队列速率限制
+		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)     // 获取115请求统计（按天）
+		api.GET("/115/stats/hourly", controllers.GetRequestStatsByHour)   // 获取115请求统计（按小时）
+		api.POST("/115/stats/clean", controllers.CleanOldRequestStats)    // 清理旧的请求统计数据
 		// 百度网盘相关路由
 		api.GET("/baidupan/oauth-url", controllers.GetBaiDuPanOAuthUrl)           // 获取百度网盘OAuth登录地址
 		api.POST("/baidupan/oauth-confirm", controllers.ConfirmBaiDuPanOAuthCode) // 确认百度网盘OAuth登录
 		api.GET("/baidupan/status", controllers.GetBaiDuPanStatus)                // 查询百度网盘状态
-
-		api.GET("/update/last", controllers.GetLastRelease)         // 获取最新版本
-		api.POST("/update/to-version", controllers.UpdateToVersion) // 获取更新版本
-		api.GET("/update/progress", controllers.UpdateProgress)     // 获取更新进度
-		api.POST("/update/cancel", controllers.CancelUpdate)        // 取消更新
 
 		api.GET("/user/info", controllers.GetUserInfo)
 		api.GET("/path/list", controllers.GetPathList)     // 目录列表
@@ -628,22 +585,20 @@ func setRouter(r *gin.Engine) {
 		api.GET("/emby/libraries", controllers.GetEmbyLibraries)    // 获取Emby媒体库列表
 		// 删除媒体库与同步目录关联
 
-		api.POST("/sync/start", controllers.StartSync)                       // 启动同步
-		api.GET("/sync/records", controllers.GetSyncRecords)                 // 同步列表
-		api.GET("/sync/task", controllers.GetSyncTask)                       // 获取同步任务详情
-		api.GET("/sync/path-list", controllers.GetSyncPathList)              // 获取同步路径列表
-		api.POST("/sync/path-add", controllers.AddSyncPath)                  // 创建同步路径
-		api.POST("/sync/path-update", controllers.UpdateSyncPath)            // 更新同步路径
-		api.POST("/sync/path-delete", controllers.DeleteSyncPath)            // 删除同步路径
-		api.POST("/sync/path/stop", controllers.StopSyncByPath)              // 停止同步路径的同步任务
-		api.POST("/sync/path/start", controllers.StartSyncByPath)            // 启动同步路径的同步任务
-		api.POST("/sync/path/full-start", controllers.FullStart115Sync)      // 启动115的全量同步任务
-		api.POST("/sync/delete-records", controllers.DelSyncRecords)         // 批量删除同步记录
-		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath)     // 关闭或开启同步目录的定时同步
-		api.GET("/sync/path/:id", controllers.GetSyncPathById)               // 获取同步路径详情
-		api.GET("/sync/path/:id/scrape-paths", controllers.GetRelScrapePath) // 获取同步路径关联的刮削路径
-		api.POST("/sync/path/scrape-paths", controllers.SaveRelScrapePath)   // 更新同步路径关联的刮削路径
-		api.POST("/sync/manual", controllers.ManualSync)                     // 手动同步
+		api.POST("/sync/start", controllers.StartSync)                   // 启动同步
+		api.GET("/sync/records", controllers.GetSyncRecords)             // 同步列表
+		api.GET("/sync/task", controllers.GetSyncTask)                   // 获取同步任务详情
+		api.GET("/sync/path-list", controllers.GetSyncPathList)          // 获取同步路径列表
+		api.POST("/sync/path-add", controllers.AddSyncPath)              // 创建同步路径
+		api.POST("/sync/path-update", controllers.UpdateSyncPath)        // 更新同步路径
+		api.POST("/sync/path-delete", controllers.DeleteSyncPath)        // 删除同步路径
+		api.POST("/sync/path/stop", controllers.StopSyncByPath)          // 停止同步路径的同步任务
+		api.POST("/sync/path/start", controllers.StartSyncByPath)        // 启动同步路径的同步任务
+		api.POST("/sync/path/full-start", controllers.FullStart115Sync)  // 启动115的全量同步任务
+		api.POST("/sync/delete-records", controllers.DelSyncRecords)     // 批量删除同步记录
+		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath) // 关闭或开启同步目录的定时同步
+		api.GET("/sync/path/:id", controllers.GetSyncPathById)           // 获取同步路径详情
+		api.POST("/sync/manual", controllers.ManualSync)                 // 手动同步
 
 		api.GET("/account/list", controllers.GetAccountList)             // 获取开放平台账号列表
 		api.POST("/account/add", controllers.CreateTmpAccount)           // 创建开放平台账号
@@ -655,40 +610,6 @@ func setRouter(r *gin.Engine) {
 		api.GET("/api-keys", controllers.ListAPIKeys)                   // 获取API Key列表
 		api.PUT("/api-keys/:id/status", controllers.UpdateAPIKeyStatus) // 更新API Key状态
 		api.DELETE("/api-keys/:id", controllers.DeleteAPIKey)           // 删除API Key
-
-		api.GET("/scrape/movie-genre", controllers.GetMovieGenre)                     // 获取电影类别
-		api.GET("/scrape/tvshow-genre", controllers.GetTvshowGenre)                   // 获取电视剧类别
-		api.GET("/scrape/language", controllers.GetLanguage)                          // 获取语言数组
-		api.GET("/scrape/countries", controllers.GetCountries)                        // 获取国家数组
-		api.GET("/scrape/tmdb", controllers.GetTmdbSettings)                          // 获取TMDB设置
-		api.POST("/scrape/tmdb", controllers.SaveTmdbSettings)                        // 保存TMDB设置
-		api.POST("/scrape/tmdb-test", controllers.TestTmdbSettings)                   // 测试TMDB设置
-		api.GET("/scrape/ai-settings", controllers.GetAiSettings)                     // 获取AI识别设置
-		api.POST("/scrape/ai-settings", controllers.SaveAiSettings)                   // 保存AI识别设置
-		api.POST("/scrape/ai-test", controllers.TestAiSettings)                       // 测试AI识别设置
-		api.GET("/scrape/movie-categories", controllers.GetMovieCategories)           // 获取电影分类列表
-		api.GET("/scrape/tvshow-categories", controllers.GetTvshowCategories)         // 获取电视剧分类列表
-		api.POST("/scrape/movie-categories", controllers.SaveMovieCategory)           // 保存电影分类
-		api.POST("/scrape/tvshow-categories", controllers.SaveTvshowCategory)         // 保存电视剧分类
-		api.DELETE("/scrape/movie-categories/:id", controllers.DeleteMovieCategory)   // 删除电影分类
-		api.DELETE("/scrape/tvshow-categories/:id", controllers.DeleteTvshowCategory) // 删除电视剧分类
-		api.GET("/scrape/pathes", controllers.GetScrapePathes)                        // 获取刮削路径列表
-		api.POST("/scrape/pathes", controllers.SaveScrapePath)                        // 保存刮削路径列表
-		api.DELETE("/scrape/pathes/:id", controllers.DeleteScrapePath)                // 删除刮削路径
-		api.GET("/scrape/pathes/:id", controllers.GetScrapePath)                      // 获取刮削路径详情
-		api.POST("/scrape/pathes/start", controllers.ScanScrapePath)                  // 扫描刮削路径
-		api.POST("/scrape/pathes/stop", controllers.StopScrape)                       // 停止刮削任务
-		api.POST("/scrape/pathes/toggle-cron", controllers.ToggleScrapePathCron)      // 关闭或开启刮削路径的定时刮削
-		api.GET("/scrape/records", controllers.GetScrapeRecords)                      // 获取刮削记录
-		api.POST("/scrape/re-scrape", controllers.ReScrape)                           // 重新刮削记录
-		api.POST("/scrape/clear-failed", controllers.ClearFailedScrapeRecords)        // 清除所有刮削失败的记录
-		api.POST("/scrape/truncate-all", controllers.TruncateAllScrapeRecords)        // 一键清空所有刮削记录
-		api.DELETE("/scrape/records", controllers.DeleteScrapeMediaFile)              // 删除刮削记录
-		api.POST("/scrape/finish", controllers.FinishScrapeMediaFile)                 // 完成刮削记录
-		api.POST("/scrape/rename-failed", controllers.RenameFailedScrapeMediaFile)    // 标记所有失败的记录为待整理
-		api.POST("/scrape/sync-pathes", controllers.SaveScrapeStrmPath)               // 保存刮削目录关联的同步目录
-		api.GET("/scrape/sync-pathes", controllers.GetScrapeStrmPaths)                // 获取刮削目录关联的同步目录
-		api.GET("/scrape/tmdb-search", controllers.TmdbSearch)                        // 搜索TMDB媒体
 
 		api.GET("/upload/queue", controllers.UploadList)                                             // 获取上传队列列表
 		api.POST("/upload/queue/clear-pending", controllers.ClearPendingUploadTasks)                 // 清除上传队列中未开始的任务
@@ -830,19 +751,13 @@ func initEnv() bool {
 }
 
 func parseParams() {
-	// 定义 guid 参数
-	var update string
 	flag.StringVar(&helpers.Guid, "guid", "", "GUID 参数")
 	flag.BoolVar(&helpers.IsFnOS, "fnos", false, "是否是飞牛环境")
-	flag.StringVar(&update, "update", "", "更新参数")
-	// 解析命令行参数
 	flag.Parse()
-	// 使用参数
 	if helpers.IsFnOS {
 		log.Printf("当前环境为飞牛环境\n")
 	}
 	if helpers.Guid == "" || helpers.Guid == "0" {
-		// 检查是否有GUID环境变量，有的话直接使用
 		guidEnv := os.Getenv("GUID")
 		if guidEnv != "" {
 			log.Printf("使用环境变量 GUID: %s 执行操作\n", guidEnv)
@@ -851,10 +766,6 @@ func parseParams() {
 			log.Printf("使用 root 执行操作\n")
 			helpers.Guid = "0"
 		}
-	}
-	// 检查是否是更新模式
-	if update != "" && runtime.GOOS == "windows" {
-		Update = true
 	}
 }
 
@@ -872,10 +783,6 @@ func parseParams() {
 func main() {
 	parseParams()
 	getRootDir()
-	if Update {
-		runUpdateProcess()
-		return
-	}
 	if !initEnv() {
 		panic("初始化环境失败")
 	}
@@ -890,123 +797,6 @@ func main() {
 		}
 	} else {
 		QMSApp.Start()
-	}
-}
-
-func runUpdateProcess() {
-	if len(os.Args) < 3 {
-		fmt.Println("更新参数不足")
-		return
-	}
-
-	updateDir := os.Args[2]
-
-	fmt.Println("开始更新流程...")
-
-	parentPID := os.Getppid()
-	fmt.Printf("等待父进程退出 (PID: %d)...\n", parentPID)
-
-	if err := waitForProcessExit(parentPID); err != nil {
-		fmt.Printf("等待父进程退出失败: %v\n", err)
-	}
-
-	fmt.Println("父进程已退出，开始更新...")
-
-	backupDir := filepath.Join(helpers.RootDir, "old")
-
-	if helpers.PathExists(backupDir) {
-		fmt.Println("删除旧的备份目录...")
-		os.RemoveAll(backupDir)
-	}
-
-	os.MkdirAll(backupDir, 0777)
-
-	appName := "QMediaSync.exe"
-	appPath := filepath.Join(helpers.RootDir, appName)
-	newAppPath := filepath.Join(updateDir, appName)
-	if helpers.PathExists(newAppPath) {
-		fmt.Printf("更新 %s...\n", appName)
-		// 将老的可执行文件改名为old.exe
-		oldAppPath := appPath + ".old.exe"
-		if helpers.PathExists(oldAppPath) {
-			if err := os.Remove(oldAppPath); err != nil {
-				fmt.Printf("删除旧 %s 失败: %v\n", appName, err)
-				os.Exit(1)
-			}
-		}
-		if err := os.Rename(appPath, oldAppPath); err != nil {
-			fmt.Printf("重命名旧 %s 失败: %v\n", appName, err)
-			os.Exit(1)
-		}
-		if err := helpers.CopyFile(newAppPath, appPath); err != nil {
-			fmt.Printf("更新主程序失败: %v\n", err)
-		}
-	} else {
-		fmt.Printf("更新目录中未找到 %s\n", appName)
-	}
-
-	replaceDir(filepath.Join(updateDir, "web_statics"), filepath.Join(helpers.RootDir, "web_statics"), backupDir)
-	replaceDir(filepath.Join(updateDir, "scripts"), filepath.Join(helpers.RootDir, "scripts"), backupDir)
-	// 删除临时exe
-	tempExePath := newAppPath + ".temp.exe"
-	if helpers.PathExists(tempExePath) {
-		if err := os.Remove(tempExePath); err != nil {
-			fmt.Printf("删除临时exe文件失败: %v\n", err)
-		}
-	}
-	fmt.Println("更新完成!")
-	fmt.Println("启动新版本...")
-	// 启动新进程
-	if !helpers.StartNewProcess(appPath, "") {
-		fmt.Printf("启动新版本失败\n")
-	}
-}
-
-func waitForProcessExit(pid int) error {
-	maxWait := 30 * time.Second
-	deadline := time.Now().Add(maxWait)
-
-	for time.Now().Before(deadline) {
-
-		alive, err := helpers.IsProcessAlive(pid)
-		if err != nil {
-			return nil
-		}
-		// 检查process已经退出
-		if !alive {
-			fmt.Printf("父进程已退出，等待资源释放...\n")
-			time.Sleep(2 * time.Second)
-			return nil
-		}
-
-		time.Sleep(500 * time.Millisecond)
-	}
-
-	return nil
-}
-
-func replaceDir(srcDir, dstDir, backupDir string) {
-	if !helpers.PathExists(srcDir) {
-		return
-	}
-
-	dirName := filepath.Base(dstDir)
-	backupPath := filepath.Join(backupDir, dirName)
-
-	if helpers.PathExists(dstDir) {
-		fmt.Printf("备份 %s 目录...\n", dirName)
-		os.RemoveAll(backupPath)
-		if err := helpers.CopyDir(dstDir, backupPath); err != nil {
-			fmt.Printf("备份 %s 目录失败: %v\n", dirName, err)
-		}
-
-		fmt.Printf("删除旧 %s 目录...\n", dirName)
-		os.RemoveAll(dstDir)
-	}
-
-	fmt.Printf("更新 %s 目录...\n", dirName)
-	if err := helpers.CopyDir(srcDir, dstDir); err != nil {
-		fmt.Printf("更新 %s 目录失败: %v\n", dirName, err)
 	}
 }
 
