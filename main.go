@@ -485,6 +485,7 @@ func setRouter(r *gin.Engine) {
 	// }
 	r.LoadHTMLFiles(filepath.Join(webStatisPath, "index.html"))
 	r.StaticFile("/favicon.ico", filepath.Join(webStatisPath, "favicon.ico"))
+	r.StaticFile("/qms-icon.png", filepath.Join(webStatisPath, "qms-icon.png"))
 	r.StaticFS("/assets", http.Dir(filepath.Join(webStatisPath, "assets")))
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index.html", gin.H{})
