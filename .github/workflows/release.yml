@@ -1,0 +1,140 @@
+name: release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get current time
+        id: time
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - run: git fetch --force --tags
+      
+      - name: Get tag name
+        id: tag
+        run: echo "::set-output name=name::${GITHUB_REF#refs/tags/v}"
+      
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      
+      - name: Build Windows amd64
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+          PUBLISH_DATE: ${{ steps.time.outputs.date }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          go mod tidy
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-H=windowsgui -s -w -X 'main.Version=${APP_VERSION}' -X 'main.PublishDate=${PUBLISH_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync_windows_amd64.exe .
+      
+      - name: Build Linux amd64
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+          PUBLISH_DATE: ${{ steps.time.outputs.date }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X 'main.Version=${APP_VERSION}' -X 'main.PublishDate=${PUBLISH_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync_linux_amd64 .
+      
+      - name: Build Linux arm64
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+          PUBLISH_DATE: ${{ steps.time.outputs.date }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X 'main.Version=${APP_VERSION}' -X 'main.PublishDate=${PUBLISH_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync_linux_arm64 .
+      
+      - name: Build FNOS FPK packages
+        env:
+          APP_VERSION: ${{ steps.tag.outputs.name }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          mkdir -p FNOS/qmediasync-amd64/app/web_statics
+          mkdir -p FNOS/qmediasync-arm64/app/web_statics
+          
+          cp QMediaSync_linux_amd64 FNOS/qmediasync-amd64/app/QMediaSync
+          cp QMediaSync_linux_arm64 FNOS/qmediasync-arm64/app/QMediaSync
+          
+          cp -r web_statics/* FNOS/qmediasync-amd64/app/web_statics/
+          cp -r web_statics/* FNOS/qmediasync-arm64/app/web_statics/
+          
+          cd FNOS/qmediasync-amd64
+          wget -q https://static2.fnnas.com/fnpack/fnpack-1.0.1-linux-amd64 -O fnpack
+          chmod +x fnpack
+          ./fnpack build
+          cd ../..
+          cp FNOS/qmediasync-amd64/qmediasync.fpk QMediaSync_x86_64_${APP_VERSION}.fpk
+          
+          cd FNOS/qmediasync-arm64
+          cp ../qmediasync-amd64/fnpack .
+          ./fnpack build
+          cd ../..
+          cp FNOS/qmediasync-arm64/qmediasync.fpk QMediaSync_arm64_${APP_VERSION}.fpk
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      
+      - name: Upload Windows amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QMediaSync_windows_amd64.exe
+          asset_name: QMediaSync_windows_amd64.exe
+          asset_content_type: application/octet-stream
+      
+      - name: Upload Linux amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QMediaSync_linux_amd64
+          asset_name: QMediaSync_linux_amd64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload Linux arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QMediaSync_linux_arm64
+          asset_name: QMediaSync_linux_arm64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload FNOS x86_64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
+          asset_name: QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
+          asset_content_type: application/octet-stream
+      
+      - name: Upload FNOS arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
+          asset_name: QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
+          asset_content_type: application/octet-stream
