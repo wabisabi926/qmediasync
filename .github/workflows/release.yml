@@ -7,12 +7,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Get current time
         id: time
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
       
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
@@ -22,7 +24,7 @@ jobs:
         id: tag
         run: echo "::set-output name=name::${GITHUB_REF#refs/tags/v}"
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: stable
       
@@ -78,63 +80,15 @@ jobs:
           cd ../..
           cp FNOS/qmediasync-arm64/qmediasync.fpk QMediaSync_arm64_${APP_VERSION}.fpk
       
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-      
-      - name: Upload Windows amd64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./QMediaSync_windows_amd64.exe
-          asset_name: QMediaSync_windows_amd64.exe
-          asset_content_type: application/octet-stream
-      
-      - name: Upload Linux amd64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./QMediaSync_linux_amd64
-          asset_name: QMediaSync_linux_amd64
-          asset_content_type: application/octet-stream
-      
-      - name: Upload Linux arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./QMediaSync_linux_arm64
-          asset_name: QMediaSync_linux_arm64
-          asset_content_type: application/octet-stream
-      
-      - name: Upload FNOS x86_64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
-          asset_name: QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
-          asset_content_type: application/octet-stream
-      
-      - name: Upload FNOS arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
-          asset_name: QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
-          asset_content_type: application/octet-stream
+          files: |
+            QMediaSync_windows_amd64.exe
+            QMediaSync_linux_amd64
+            QMediaSync_linux_arm64
+            QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
+            QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
