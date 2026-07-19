@@ -75,13 +75,13 @@ jobs:
           chmod +x fnpack
           ./fnpack build
           cd ../..
-          cp FNOS/qmediasync-amd64/qmediasync.fpk QMediaSync_x86_64_${APP_VERSION}.fpk
+          cp FNOS/qmediasync-amd64/qmediasync.fpk QMediaSync_fnos_amd64_${APP_VERSION}.fpk
           
           cd FNOS/qmediasync-arm64
           cp ../qmediasync-amd64/fnpack .
           ./fnpack build
           cd ../..
-          cp FNOS/qmediasync-arm64/qmediasync.fpk QMediaSync_arm64_${APP_VERSION}.fpk
+          cp FNOS/qmediasync-arm64/qmediasync.fpk QMediaSync_fnos_arm64_${APP_VERSION}.fpk
       
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
@@ -93,5 +93,5 @@ jobs:
             QMediaSync_windows_amd64.exe
             QMediaSync_linux_amd64
             QMediaSync_linux_arm64
-            QMediaSync_x86_64_${{ steps.tag.outputs.name }}.fpk
-            QMediaSync_arm64_${{ steps.tag.outputs.name }}.fpk
+            QMediaSync_fnos_amd64_${{ steps.tag.outputs.name }}.fpk
+            QMediaSync_fnos_arm64_${{ steps.tag.outputs.name }}.fpk
