@@ -35,7 +35,7 @@ import (
 )
 
 var Version string = "v0.15.07"
-var PublishDate string = "2026-07-15"
+var PublishDate string = "2026-07-19"
 var FANART_API_KEY = ""
 var DEFAULT_TMDB_ACCESS_TOKEN = ""
 var DEFAULT_TMDB_API_KEY = ""

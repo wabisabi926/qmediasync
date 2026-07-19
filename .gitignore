@@ -1,6 +1,5 @@
 *.log
 go.sum
-web_statics/
 frontend/node_modules/
 config/logs/*
 config/config.yml
