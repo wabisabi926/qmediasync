@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 
@@ -41,6 +42,8 @@ func GetAccountList(c *gin.Context) {
 		TokenFailedReason string            `json:"token_failed_reason"`
 		BaseUrl           string            `json:"base_url"`
 		AuthType          string            `json:"auth_type"`
+		AuthSourceType    string            `json:"auth_source_type"`
+		AuthProvider      string            `json:"auth_provider"`
 	}
 	resp := make([]accountResp, 0, len(accounts))
 	for _, account := range accounts {
@@ -48,28 +51,16 @@ func GetAccountList(c *gin.Context) {
 			ID:                account.ID,
 			SourceType:        account.SourceType,
 			Name:              account.Name,
-			AppId:             "",
-			AppIdName:         "",
+			AppId:             account.AppId,
+			AppIdName:         account.AppIdName,
 			Username:          account.Username,
-			UserId:            string(account.UserId),
+			UserId:            account.UserId,
 			Token:             account.Token,
 			CreatedAt:         account.CreatedAt,
 			TokenFailedReason: account.TokenFailedReason,
 			BaseUrl:           account.BaseUrl,
-		}
-		switch account.AppId {
-		case "Q115-STRM":
-			a.AppId = ""
-			a.AppIdName = "Q115-STRM"
-		case "MQ的媒体库":
-			a.AppId = ""
-			a.AppIdName = "MQ的媒体库"
-		case "QMediaSync":
-			a.AppId = ""
-			a.AppIdName = "QMediaSync"
-		default:
-			a.AppIdName = "自定义"
-			a.AppId = account.AppId
+			AuthSourceType:    account.AuthSourceType,
+			AuthProvider:      account.AuthProvider,
 		}
 		if a.Name == "" {
 			a.Name = account.Username
@@ -95,8 +86,10 @@ func GetAccountList(c *gin.Context) {
 // @Produce json
 // @Param source_type query string true "账号源类型"
 // @Param name query string true "账号名称"
-// @Param app_id query string false "应用ID（自定义时必需）"
-// @Param app_id_name query string false "应用ID名称（Q115-STRM、MQ的媒体库、自定义）"
+// @Param app_id query string false "应用ID"
+// @Param app_id_name query string false "应用ID名称"
+// @Param auth_source_type query string false "授权来源类型"
+// @Param auth_provider query string false "授权提供者"
 // @Success 200 {object} object
 // @Failure 200 {object} object
 // @Router /account/create [post]
@@ -104,32 +97,97 @@ func GetAccountList(c *gin.Context) {
 // @Security ApiKeyAuth
 func CreateTmpAccount(c *gin.Context) {
 	type tmpAccountReq struct {
-		SourceType models.SourceType `json:"source_type" form:"source_type"`
-		Name       string            `json:"name" form:"name"`
-		AppId      string            `json:"app_id" form:"app_id"`
-		AppIdName  string            `json:"app_id_name" form:"app_id_name"`
+		SourceType        models.SourceType `json:"source_type" form:"source_type"`
+		Name              string            `json:"name" form:"name"`
+		AppId             string            `json:"app_id" form:"app_id"`
+		AppIdName         string            `json:"app_id_name" form:"app_id_name"`
+		AuthSourceType    string            `json:"auth_source_type" form:"auth_source_type"`
+		AuthProvider      string            `json:"auth_provider" form:"auth_provider"`
 	}
 	tmpAccount := &tmpAccountReq{}
 	if err := c.ShouldBind(tmpAccount); err != nil {
 		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "请求参数错误", Data: nil})
 		return
 	}
-	// 创建临时账号
+
+	if models.SourceType115 == tmpAccount.SourceType {
+		account, err := models.CreateAccountWithAuthSource(
+			tmpAccount.Name,
+			tmpAccount.AuthSourceType,
+			tmpAccount.AuthProvider,
+			tmpAccount.AppId,
+			tmpAccount.AppIdName,
+		)
+		if err != nil {
+			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "创建开放平台账号失败", Data: nil})
+			return
+		}
+		c.JSON(http.StatusOK, APIResponse[models.Account]{Code: Success, Message: "创建开放平台账号成功", Data: *account})
+		return
+	}
+
 	var appId string
 	if tmpAccount.SourceType == models.SourceTypeBaiduPan {
 		appId = helpers.GlobalConfig.BaiDuPanAppId
 	}
 
-	if models.SourceType115 == tmpAccount.SourceType {
-		// 检查appIDName是否有效
-		appId = tmpAccount.AppIdName
-	}
 	account, err := models.CreateAccountByName(tmpAccount.Name, tmpAccount.SourceType, appId)
 	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "创建开放平台账号失败", Data: nil})
 		return
 	}
 	c.JSON(http.StatusOK, APIResponse[models.Account]{Code: Success, Message: "创建开放平台账号成功", Data: *account})
+}
+
+// UpdateAccount 更新开放平台账号信息
+// @Summary 更新账号
+// @Description 更新指定ID的开放平台账号信息（名称、应用名等）
+// @Tags 账号管理
+// @Accept json
+// @Produce json
+// @Param id query integer true "账号ID"
+// @Param name query string false "账号名称"
+// @Param app_id_name query string false "应用名"
+// @Success 200 {object} object
+// @Failure 200 {object} object
+// @Router /account/update [post]
+// @Security JwtAuth
+// @Security ApiKeyAuth
+func UpdateAccount(c *gin.Context) {
+	type updateAccountReq struct {
+		ID         uint   `json:"id" form:"id"`
+		Name       string `json:"name" form:"name"`
+		AppIdName  string `json:"app_id_name" form:"app_id_name"`
+	}
+	req := &updateAccountReq{}
+	if err := c.ShouldBind(req); err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "请求参数错误", Data: nil})
+		return
+	}
+
+	account, err := models.GetAccountById(req.ID)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "查询开放平台账号失败", Data: nil})
+		return
+	}
+
+	updateData := make(map[string]any)
+	if req.Name != "" {
+		updateData["name"] = req.Name
+	}
+	if req.AppIdName != "" {
+		updateData["app_id_name"] = req.AppIdName
+	}
+
+	if len(updateData) > 0 {
+		err := db.Db.Model(account).Updates(updateData).Error
+		if err != nil {
+			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "更新开放平台账号失败", Data: nil})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "更新开放平台账号成功", Data: nil})
 }
 
 // DeleteAccount 删除开放平台账号

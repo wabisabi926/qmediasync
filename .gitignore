@@ -1,5 +1,7 @@
 *.log
 go.sum
+web_statics/
+frontend/node_modules/
 config/logs/*
 config/config.yml
 config/115-cookies.txt

@@ -6,6 +6,7 @@ import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/openlist"
+	"Q115-STRM/internal/v115auth"
 	"Q115-STRM/internal/v115open"
 	"context"
 	"fmt"
@@ -17,6 +18,7 @@ type Account struct {
 	Name              string     `json:"name"` // 账号备注，仅供用户自己识别账号使用，唯一
 	SourceType        SourceType `json:"source_type"`
 	AppId             string     `json:"app_id"`
+	AppIdName         string     `json:"app_id_name"`
 	Token             string     `json:"token" gorm:"type:string;size:512"`
 	RefreshToken      string     `json:"refresh_token" gorm:"type:string;size:512"`
 	TokenExpiriesTime int64      `json:"token_expiries_time"`
@@ -25,10 +27,16 @@ type Account struct {
 	Password          string     `json:"password" gorm:"type:string;size:256"`            // openlist的用户密码
 	BaseUrl           string     `json:"base_url" gorm:"type:string;size:1024"`           // openlist的访问地址http[s]://ip:port
 	TokenFailedReason string     `json:"token_failed_reason" gorm:"type:string;size:256"` // 刷新token失败的原因
+	AuthSourceType    string     `json:"auth_source_type" gorm:"type:string;size:64"`     // 授权来源类型
+	AuthProvider      string     `json:"auth_provider" gorm:"type:string;size:64"`        // 授权提供者
 }
 
 func (account *Account) TableName() string {
 	return "account"
+}
+
+func (account *Account) V115AuthSource() v115auth.AuthSource {
+	return v115auth.ParseAuthSource(account.AuthSourceType, account.AuthProvider, account.AppId, account.AppIdName)
 }
 
 // 更新token和refreshToken
@@ -173,6 +181,29 @@ func CreateAccountByName(name string, srouceType SourceType, appId string) (*Acc
 	account.Username = ""
 
 	// 插入数据库，如果插入失败则报错
+	err := db.Db.Save(account).Error
+	if err != nil {
+		helpers.AppLogger.Errorf("创建开放平台账号失败: %v", err)
+		return nil, err
+	}
+	return account, nil
+}
+
+// 创建115账号，带有授权来源信息
+func CreateAccountWithAuthSource(name string, authSourceType, authProvider, appId, appIdName string) (*Account, error) {
+	account := &Account{}
+	account.Name = name
+	account.SourceType = SourceType115
+	account.AppId = appId
+	account.AppIdName = appIdName
+	account.AuthSourceType = authSourceType
+	account.AuthProvider = authProvider
+	account.Token = ""
+	account.RefreshToken = ""
+	account.TokenExpiriesTime = 0
+	account.UserId = ""
+	account.Username = ""
+
 	err := db.Db.Save(account).Error
 	if err != nil {
 		helpers.AppLogger.Errorf("创建开放平台账号失败: %v", err)

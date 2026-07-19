@@ -526,7 +526,10 @@ func setRouter(r *gin.Engine) {
 		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)  // 查询115二维码扫码状态
 		api.GET("/115/status", controllers.Get115Status)                  // 查询115状态
 		api.GET("/115/oauth-url", controllers.GetOAuthUrl)                // 获取115 OAuth登录地址
-		api.POST("115/oauth-confirm", controllers.ConfirmOAuthCode)       // 确认OAuth登录
+		api.POST("/115/oauth-confirm", controllers.ConfirmOAuthCode)      // 确认OAuth登录
+		api.GET("/115/oauth-status", controllers.GetOAuthStatus)          // 查询115 OAuth授权状态
+		api.GET("/115/appids", controllers.GetAppIdSources)               // 获取115开放平台APP ID目录
+		api.GET("/115/account-auth-action", controllers.GetAccountAuthAction) // 获取账号授权操作类型
 		api.GET("/115/queue/stats", controllers.GetQueueStats)            // 获取115 OpenAPI请求队列统计数据
 		api.POST("/115/queue/rate-limit", controllers.SetQueueRateLimit)  // 设置115 OpenAPI请求队列速率限制
 		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)     // 获取115请求统计（按天）
@@ -598,6 +601,7 @@ func setRouter(r *gin.Engine) {
 
 		api.GET("/account/list", controllers.GetAccountList)             // 获取开放平台账号列表
 		api.POST("/account/add", controllers.CreateTmpAccount)           // 创建开放平台账号
+		api.POST("/account/update", controllers.UpdateAccount)           // 更新开放平台账号
 		api.POST("/account/delete", controllers.DeleteAccount)           // 删除开放平台账号
 		api.POST("/account/openlist", controllers.CreateOpenListAccount) // 创建openlist账号
 
