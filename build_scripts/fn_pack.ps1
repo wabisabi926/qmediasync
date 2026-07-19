@@ -67,28 +67,12 @@ $env:CGO_ENABLED = "0"
 # 获取当前日期
 $PUBLISH_DATE = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-# 读取API密钥环境变量
-$FANART_API_KEY = $env:FANART_API_KEY
-$DEFAULT_TMDB_ACCESS_TOKEN = $env:DEFAULT_TMDB_ACCESS_TOKEN
-$DEFAULT_TMDB_API_KEY = $env:DEFAULT_TMDB_API_KEY
-$DEFAULT_SC_API_KEY = $env:DEFAULT_SC_API_KEY
+# 读取API密钥环境变量（已精简功能的密钥不再强制要求）
 $ENCRYPTION_KEY = $env:ENCRYPTION_KEY
-
-# 检查API密钥是否设置
-if ([string]::IsNullOrEmpty($FANART_API_KEY) -or [string]::IsNullOrEmpty($DEFAULT_TMDB_ACCESS_TOKEN) -or [string]::IsNullOrEmpty($DEFAULT_TMDB_API_KEY) -or [string]::IsNullOrEmpty($DEFAULT_SC_API_KEY)) {
-    Write-Colored "red" "Error: One or more API keys are not set"
-    Write-Colored "yellow" "Please set all required environment variables:"
-    Write-Colored "yellow" "  - FANART_API_KEY"
-    Write-Colored "yellow" "  - DEFAULT_TMDB_ACCESS_TOKEN"
-    Write-Colored "yellow" "  - DEFAULT_TMDB_API_KEY"
-    Write-Colored "yellow" "  - DEFAULT_SC_API_KEY"
-    Write-Colored "yellow" "  - ENCRYPTION_KEY"
-    exit 1
-}
 
 # 设置编译参数
 $EXE_NAME = "QMediaSync"
-$LDFLAGS = "-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
+$LDFLAGS = "-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
 
 # 编译
 Write-Colored "cyan" "执行编译命令..."

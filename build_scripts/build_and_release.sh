@@ -129,33 +129,16 @@ for platform in "${PLATFORMS[@]}"; do
         # Get current date in format: yyyy-mm-dd HH:MM:ss
         PUBLISH_DATE=$(date "+%Y-%m-%d %H:%M:%S")
         
-        # Read API keys from environment variables
-        FANART_API_KEY="${FANART_API_KEY:-}"
-        DEFAULT_TMDB_ACCESS_TOKEN="${DEFAULT_TMDB_ACCESS_TOKEN:-}"
-        DEFAULT_TMDB_API_KEY="${DEFAULT_TMDB_API_KEY:-}"
-        DEFAULT_SC_API_KEY="${DEFAULT_SC_API_KEY:-}"
+        # Read API keys from environment variables (已精简功能的密钥不再强制要求)
         ENCRYPTION_KEY="${ENCRYPTION_KEY:-}"
-        
-        # Check if any API key is empty
-        if [ -z "$FANART_API_KEY" ] || [ -z "$DEFAULT_TMDB_ACCESS_TOKEN" ] || [ -z "$DEFAULT_TMDB_API_KEY" ] || [ -z "$DEFAULT_SC_API_KEY" ]; then
-            print_colored "red" "Error: One or more API keys are not set"
-            print_colored "yellow" "Please set all required environment variables:"
-            print_colored "yellow" "  - FANART_API_KEY"
-            print_colored "yellow" "  - DEFAULT_TMDB_ACCESS_TOKEN"
-            print_colored "yellow" "  - DEFAULT_TMDB_API_KEY"
-            print_colored "yellow" "  - DEFAULT_SC_API_KEY"
-            print_colored "yellow" "  - ENCRYPTION_KEY"
-            exit 1
-        fi
         
         # Determine executable name and link flags
         if [ "$platform" = "windows" ]; then
             EXE_NAME="QMediaSync.exe"
-            LDFLAGS="-H=windowsgui -s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
-            # LDFLAGS="-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
+            LDFLAGS="-H=windowsgui -s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
         else
             EXE_NAME="QMediaSync"
-            LDFLAGS="-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
+            LDFLAGS="-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
         fi
         
         # Build
