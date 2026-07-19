@@ -61,6 +61,9 @@ jobs:
           mkdir -p FNOS/qmediasync-amd64/app/web_statics
           mkdir -p FNOS/qmediasync-arm64/app/web_statics
           
+          sed -i "s/^version\s*=.*/version = ${APP_VERSION}/" FNOS/qmediasync-amd64/manifest
+          sed -i "s/^version\s*=.*/version = ${APP_VERSION}/" FNOS/qmediasync-arm64/manifest
+          
           cp QMediaSync_linux_amd64 FNOS/qmediasync-amd64/app/QMediaSync
           cp QMediaSync_linux_arm64 FNOS/qmediasync-arm64/app/QMediaSync
           
