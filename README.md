@@ -3,7 +3,7 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/qicfan/qmediasync)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/qicfan/qmediasync)
 
-#### 本魔改项目基于个人需求，基于原项目做的精简，仅限于本人使用，不打包成品，请支持原作者，非常简单好用的项目。
+#### 本魔改项目基于个人需求，基于原项目做的精简，仅限于本人使用，请支持原作者，非常简单好用的项目。
 
 ## 更新日志：
 - 1.精简：搜刮和整理、网盘文件管理、github 升级模块、公告模块、捐赠模块等；
