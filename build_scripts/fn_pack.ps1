@@ -161,10 +161,11 @@ if (!(Test-Path -Path "FNOS" -PathType Container)) {
     }
 
     Set-Location -Path "FNOS/qmediasync-arm64"
-    $fnpackExists = Get-Command "fnpack" -ErrorAction SilentlyContinue
-    if ($fnpackExists) {
+    $fnpackPath = Join-Path $PSScriptRoot "..\fnpack.exe"
+    if (!(Test-Path $fnpackPath)) { $fnpackPath = "fnpack.exe" }
+    if (Test-Path $fnpackPath) {
         Write-Colored "cyan" "Executing fnpack build for arm64..."
-        fnpack build
+        & $fnpackPath build
         if ($LASTEXITCODE -eq 0) {
             Write-Colored "green" "FPK build completed for arm64"
 
@@ -179,7 +180,7 @@ if (!(Test-Path -Path "FNOS" -PathType Container)) {
             Write-Colored "red" "Error: fnpack build failed for arm64"
         }
     } else {
-        Write-Colored "yellow" "Warning: fnpack command not found, skipping FPK build for arm64"
+        Write-Colored "yellow" "Warning: fnpack.exe not found, skipping FPK build for arm64"
     }
 
     Set-Location -Path "../../"
@@ -239,10 +240,11 @@ if (!(Test-Path -Path "FNOS" -PathType Container)) {
     }
 
     Set-Location -Path "FNOS/qmediasync-amd64"
-    $fnpackExists = Get-Command "fnpack" -ErrorAction SilentlyContinue
-    if ($fnpackExists) {
+    $fnpackPath = Join-Path $PSScriptRoot "..\fnpack.exe"
+    if (!(Test-Path $fnpackPath)) { $fnpackPath = "fnpack.exe" }
+    if (Test-Path $fnpackPath) {
         Write-Colored "cyan" "Executing fnpack build for amd64..."
-        fnpack build
+        & $fnpackPath build
         if ($LASTEXITCODE -eq 0) {
             Write-Colored "green" "FPK build completed for amd64"
 
@@ -257,7 +259,7 @@ if (!(Test-Path -Path "FNOS" -PathType Container)) {
             Write-Colored "red" "Error: fnpack build failed for amd64"
         }
     } else {
-        Write-Colored "yellow" "Warning: fnpack command not found, skipping FPK build for amd64"
+        Write-Colored "yellow" "Warning: fnpack.exe not found, skipping FPK build for amd64"
     }
 
     Set-Location -Path "../../"

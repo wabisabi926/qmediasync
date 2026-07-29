@@ -36,6 +36,11 @@ jobs:
         run: |
           go mod tidy
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-H=windowsgui -s -w -X 'main.Version=${APP_VERSION}' -X 'main.PublishDate=${PUBLISH_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync_windows_amd64.exe .
+          mkdir -p QMediaSync_windows_amd64
+          cp QMediaSync_windows_amd64.exe QMediaSync_windows_amd64/
+          cp icon.ico QMediaSync_windows_amd64/ 2>/dev/null || true
+          cp -r web_statics QMediaSync_windows_amd64/ 2>/dev/null || true
+          zip -r QMediaSync_windows_amd64.zip QMediaSync_windows_amd64/
       
       - name: Build Linux amd64
         env:
@@ -90,7 +95,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            QMediaSync_windows_amd64.exe
+            QMediaSync_windows_amd64.zip
             QMediaSync_linux_amd64
             QMediaSync_linux_arm64
             QMediaSync_fnos_amd64_${{ steps.tag.outputs.name }}.fpk
