@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/emby302/config"
 	"Q115-STRM/emby302/util/logs/colors"
 	"Q115-STRM/emby302/web"
+	"Q115-STRM/fnosproxy"
 	"Q115-STRM/internal/backup"
 	"Q115-STRM/internal/controllers"
 	"Q115-STRM/internal/db"
@@ -57,6 +58,8 @@ type App struct {
 func (app *App) Start() {
 	// 启动外网302服务
 	startEmby302()
+	// 启动飞牛影视反代服务
+	startFnosProxy()
 	if helpers.IsRelease {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -409,6 +412,11 @@ func startEmby302() {
 
 }
 
+// startFnosProxy 启动飞牛影视反代服务
+func startFnosProxy() {
+	fnosproxy.GetService().Start(context.Background())
+}
+
 func initLogger() {
 	logPath := filepath.Join(helpers.ConfigDir, "logs")
 	os.MkdirAll(logPath, 0755) // 如果没有logs目录则创建
@@ -520,20 +528,20 @@ func setRouter(r *gin.Engine) {
 		})
 		api.POST("/database/delete-all-table", controllers.DeleteAllTabble) // 删除所有表
 
-		api.POST("/database/repair", controllers.RepairDB)                // 更新系统设置
-		api.POST("/auth/115-qrcode-open", controllers.GetLoginQrCodeOpen) // 获取115开放平台登录二维码
-		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)  // 查询115二维码扫码状态
-		api.GET("/115/status", controllers.Get115Status)                  // 查询115状态
-		api.GET("/115/oauth-url", controllers.GetOAuthUrl)                // 获取115 OAuth登录地址
-		api.POST("/115/oauth-confirm", controllers.ConfirmOAuthCode)      // 确认OAuth登录
-		api.GET("/115/oauth-status", controllers.GetOAuthStatus)          // 查询115 OAuth授权状态
-		api.GET("/115/appids", controllers.GetAppIdSources)               // 获取115开放平台APP ID目录
+		api.POST("/database/repair", controllers.RepairDB)                    // 更新系统设置
+		api.POST("/auth/115-qrcode-open", controllers.GetLoginQrCodeOpen)     // 获取115开放平台登录二维码
+		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)      // 查询115二维码扫码状态
+		api.GET("/115/status", controllers.Get115Status)                      // 查询115状态
+		api.GET("/115/oauth-url", controllers.GetOAuthUrl)                    // 获取115 OAuth登录地址
+		api.POST("/115/oauth-confirm", controllers.ConfirmOAuthCode)          // 确认OAuth登录
+		api.GET("/115/oauth-status", controllers.GetOAuthStatus)              // 查询115 OAuth授权状态
+		api.GET("/115/appids", controllers.GetAppIdSources)                   // 获取115开放平台APP ID目录
 		api.GET("/115/account-auth-action", controllers.GetAccountAuthAction) // 获取账号授权操作类型
-		api.GET("/115/queue/stats", controllers.GetQueueStats)            // 获取115 OpenAPI请求队列统计数据
-		api.POST("/115/queue/rate-limit", controllers.SetQueueRateLimit)  // 设置115 OpenAPI请求队列速率限制
-		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)     // 获取115请求统计（按天）
-		api.GET("/115/stats/hourly", controllers.GetRequestStatsByHour)   // 获取115请求统计（按小时）
-		api.POST("/115/stats/clean", controllers.CleanOldRequestStats)    // 清理旧的请求统计数据
+		api.GET("/115/queue/stats", controllers.GetQueueStats)                // 获取115 OpenAPI请求队列统计数据
+		api.POST("/115/queue/rate-limit", controllers.SetQueueRateLimit)      // 设置115 OpenAPI请求队列速率限制
+		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)         // 获取115请求统计（按天）
+		api.GET("/115/stats/hourly", controllers.GetRequestStatsByHour)       // 获取115请求统计（按小时）
+		api.POST("/115/stats/clean", controllers.CleanOldRequestStats)        // 清理旧的请求统计数据
 		// 百度网盘相关路由
 		api.GET("/baidupan/oauth-url", controllers.GetBaiDuPanOAuthUrl)           // 获取百度网盘OAuth登录地址
 		api.POST("/baidupan/oauth-confirm", controllers.ConfirmBaiDuPanOAuthCode) // 确认百度网盘OAuth登录
@@ -576,6 +584,9 @@ func setRouter(r *gin.Engine) {
 		api.POST("/setting/emby/parse", controllers.ParseEmby)                                     // 解析Emby媒体信息
 		api.GET("/setting/emby-config", controllers.GetEmbyConfig)                                 // 获取新的Emby配置
 		api.POST("/setting/emby-config", controllers.UpdateEmbyConfig)                             // 更新新的Emby配置
+		api.GET("/setting/fnos-proxy/config", controllers.GetFnosProxyConfig)                      // 获取飞牛反代配置
+		api.POST("/setting/fnos-proxy/config", controllers.UpdateFnosProxyConfig)                  // 更新飞牛反代配置
+		api.POST("/setting/fnos-proxy/test", controllers.TestFnosProxyConfig)                      // 测试飞牛影视地址
 		api.POST("/setting/threads", controllers.UpdateThreads)                                    // 更新线程数
 		api.GET("/setting/threads", controllers.GetThreads)                                        // 获取线程数
 

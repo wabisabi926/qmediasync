@@ -39,6 +39,10 @@ docs/sharepoint_usage.md
 config/qmediasync.db
 *.fpk
 *.DS_Store
+test/
+fnpack.exe
+FNOS/qmediasync-arm64/fnpack.exe
+FNOS/qmediasync-amd64/fnpack.exe
 FNOS/qmediasync-arm64/app/QMediaSync
 FNOS/qmediasync-arm64/app/web_statics/
 FNOS/qmediasync-amd64/app/web_statics/

@@ -1,7 +1,6 @@
 package jsons_test
 
 import (
-	"encoding/json"
 	"log"
 	"strconv"
 	"testing"
@@ -47,25 +46,4 @@ func TestMap(t *testing.T) {
 	item := jsons.FromArray([]any{1, 2, 1, 3, 8})
 	res := item.Map(func(val *jsons.Item) any { return "😄" + strconv.Itoa(val.Ti().Val().(int)) })
 	log.Println("转换完成后的数组: ", res)
-}
-
-func TestNativeUnmarshal(t *testing.T) {
-	str := `aaa`
-	var dest string
-	if err := json.Unmarshal([]byte(str), &dest); err != nil {
-		t.Fatal(err)
-		return
-	}
-	log.Println(dest)
-
-}
-
-func TestNativeMarshal(t *testing.T) {
-	str := `aaa`
-	if res, err := json.Marshal(str); err != nil {
-		t.Fatal(err)
-		return
-	} else {
-		log.Println(string(res))
-	}
 }

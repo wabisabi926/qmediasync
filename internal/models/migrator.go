@@ -25,6 +25,7 @@ var AllTables = []any{
 	RequestStat{}, EmbyConfig{}, EmbyMediaItem{}, EmbyMediaSyncFile{}, EmbyLibrary{}, EmbyLibrarySyncPath{},
 	DbDownloadTask{}, DbUploadTask{}, NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{},
 	ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{},
+	FnosProxyConfig{},
 }
 
 func (*Migrator) TableName() string {

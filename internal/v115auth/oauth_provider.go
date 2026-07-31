@@ -127,10 +127,10 @@ func (provider relayOAuthProvider) Confirm(_ context.Context, payload map[string
 	}
 	if resp.Data.AccessToken == "" || resp.Data.RefreshToken == "" {
 		if resp.Error != "" {
-			return OAuthTokenResult{}, fmt.Errorf(resp.Error)
+			return OAuthTokenResult{}, fmt.Errorf("%s", resp.Error)
 		}
 		if resp.Message != "" {
-			return OAuthTokenResult{}, fmt.Errorf(resp.Message)
+			return OAuthTokenResult{}, fmt.Errorf("%s", resp.Message)
 		}
 		return OAuthTokenResult{}, fmt.Errorf("中转回调未返回访问凭证")
 	}
