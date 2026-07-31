@@ -12,6 +12,29 @@ v0.16.0 - 2026-07-31
 - 清理无效的集成测试
 
 
+v0.15.08 - 2026-07-29
+
+- 修复 Windows 托盘图标加载和打包脚本
+- 使用 favicon.ico 作为头像，移除重复的 qms-icon.png
+- 优化飞牛包命名格式，使两个架构版本在 GitHub Release 页面相邻显示
+
+
+v0.15.10 - 2026-07-19
+
+- 添加 GitHub Actions 自动发布工作流，支持全平台构建
+- 更新 FNOS manifest 配置，修复 platform 和 desktop_uidir 字段
+- 修复飞牛 arm 版本 platform 字段，添加 manifest 版本自动更新
+- 移除强制 API 密钥检查
+
+
+v0.15.07 - 2026-07-19
+
+- 集成115网盘授权功能
+- 移除刮削、文件管理、公告、更新、整理和 ed2k 功能，精简应用
+- 更新前端，添加 qms-icon.png 路由
+- 修复飞牛版本桌面图标
+
+
 v0.14.21 - 2026-03-30
 
 - fix #209 [Bug] v0.14.20 刮削重命名时数组越界panic: index out of range [0] with length 0
