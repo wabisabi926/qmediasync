@@ -22,6 +22,12 @@ func GetFnosProxyConfig() (*FnosProxyConfig, error) {
 	if GlobalFnosProxyConfig != nil {
 		return GlobalFnosProxyConfig, nil
 	}
+	// 检查表是否存在，不存在则自动创建（容错，防止迁移遗漏）
+	if !db.Db.Migrator().HasTable(&FnosProxyConfig{}) {
+		if err := db.Db.AutoMigrate(&FnosProxyConfig{}); err != nil {
+			return nil, err
+		}
+	}
 	config := &FnosProxyConfig{}
 	// 首次使用时自动创建默认记录
 	if err := db.Db.FirstOrCreate(config).Error; err != nil {
