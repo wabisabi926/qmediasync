@@ -17,7 +17,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 38
+var MaxVersionCode = 39
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -321,6 +321,12 @@ func Migrate() {
 		// 添加播放通知类型规则
 		addNewNotificationRulesForExistingChannels(db.Db)
 		helpers.AppLogger.Info("已添加播放通知类型规则")
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 39 {
+		// 添加飞牛影视反代配置表
+		db.Db.AutoMigrate(FnosProxyConfig{})
+		helpers.AppLogger.Info("已添加飞牛影视反代配置表")
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
