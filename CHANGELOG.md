@@ -2,6 +2,16 @@
 
 
 
+v0.16.0 - 2026-07-31
+
+- 新增飞牛影视反代功能，解决 senplayer、爆米花、vidhub 等播放器无法播放飞牛添加的 STRM 文件的问题
+- 将 fnosproxy 模块独立到根目录，与 emby302 结构对称
+- 更新飞牛应用简介
+- 修复 oauth_provider.go 的 go vet 警告（fmt.Errorf 格式化字符串安全问题）
+- 修复 emby302 logs.go 在 AppLogger 为 nil 时的 panic
+- 清理无效的集成测试
+
+
 v0.14.21 - 2026-03-30
 
 - fix #209 [Bug] v0.14.20 刮削重命名时数组越界panic: index out of range [0] with length 0
