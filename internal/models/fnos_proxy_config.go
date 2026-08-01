@@ -6,9 +6,9 @@ import "Q115-STRM/internal/db"
 type FnosProxyConfig struct {
 	BaseModel
 	Enabled  int    `json:"enabled" gorm:"default:0"`          // 是否启用，0-禁用，1-启用
-	FnosURL  string `json:"fnos_url" gorm:"type:varchar(500)"`  // 飞牛影视地址
-	Port     string `json:"port" gorm:"type:varchar(10)"`       // 反代端口
-	PathMaps string `json:"path_maps" gorm:"type:text"`         // STRM路径映射，每行一个：飞牛路径|本地路径
+	FnosURL  string `json:"fnos_url" gorm:"type:varchar(500)"` // 飞牛影视地址
+	Port     string `json:"port" gorm:"type:varchar(10)"`      // 反代端口
+	PathMaps string `json:"path_maps" gorm:"type:text"`        // STRM路径映射，每行一个：飞牛路径|本地路径
 }
 
 func (*FnosProxyConfig) TableName() string {

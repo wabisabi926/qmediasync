@@ -88,10 +88,6 @@ var AccessiblePathes string
 var IsFnOS bool
 var IsRelease bool
 var Guid string
-var FANART_API_KEY = ""
-var DEFAULT_TMDB_ACCESS_TOKEN = ""
-var DEFAULT_TMDB_API_KEY = ""
-var DEFAULT_SC_API_KEY = ""
 var ENCRYPTION_KEY = ""
 
 func InitConfig() error {
