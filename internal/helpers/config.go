@@ -32,7 +32,6 @@ type ConfigLog struct {
 	File       string `yaml:"file"`
 	V115       string `yaml:"v115"`
 	OpenList   string `yaml:"openList"`
-	TMDB       string `yaml:"tmdb"`
 	BaiduPan   string `yaml:"baiduPan"`
 	Web        string `yaml:"web"`
 	SyncLogDir string `yaml:"syncLogDir"` // 同步任务的日志目录，每个同步任务会生成一个日志文件，文件名为任务ID
@@ -210,7 +209,6 @@ func MakeDefaultConfig() *Config {
 			File:       "logs/app.log",
 			V115:       "logs/115.log",
 			OpenList:   "logs/openList.log",
-			TMDB:       "logs/tmdb.log",
 			BaiduPan:   "logs/baidupan.log",
 			Web:        "logs/web.log",
 			SyncLogDir: "logs/sync",

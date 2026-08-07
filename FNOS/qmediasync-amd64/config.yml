@@ -2,7 +2,6 @@ log:
   file: logs/app.log
   v115: logs/115.log
   openList: logs/openList.log
-  tmdb: logs/tmdb.log
   baiduPan: logs/baidupan.log
   web: logs/web.log
   syncLogDir: logs/sync

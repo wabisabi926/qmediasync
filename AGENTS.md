@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-QMediaSync 是一个媒体同步和刮削系统，用于管理 115网盘/百度网盘/OpenList 等云存储与 Emby 媒体服务器之间的文件同步、STRM 生成、媒体刮削（TMDB/Fanart）等功能。
+QMediaSync 是一个媒体同步系统，用于管理 115网盘/百度网盘/OpenList 等云存储与 Emby 媒体服务器之间的文件同步、STRM 生成等功能。
 
 - **语言:** Go 1.25
 - **模块名:** `Q115-STRM`
@@ -76,23 +76,18 @@ internal/
   db/database/           # 内嵌 PostgreSQL 管理器
   synccron/              # 定时任务管理 + 同步任务队列
   syncstrm/              # STRM 文件同步驱动（115/OpenList/百度网盘/本地）
-  scrape/                # 媒体刮削逻辑（电影/电视剧/季）
   v115open/              # 115网盘 Open API 客户端（含速率限制）
   baidupan/              # 百度网盘客户端
   openlist/              # OpenList 客户端
   open123/               # 123云盘客户端
-  tmdb/                  # TMDB API 客户端
-  fanart/                # Fanart.tv API 客户端
   emby/                  # Emby 媒体服务器集成
   embyclient-rest-go/    # Emby REST API 客户端
   notification/          # 通知类型定义与常量
   notificationmanager/   # 通知分发逻辑
-  openai/                # OpenAI 集成（AI 识别）
   websocket/             # WebSocket 事件中心
   backup/                # 数据库备份/恢复
   migrate/               # 数据库迁移服务
   github/                # GitHub Release 管理
-  updater/               # 应用自动更新
 emby302/                 # 嵌入的 Emby 302 代理子项目
 openxpanapi/             # 自动生成的百度网盘 OpenAPI 客户端
 web_statics/             # 前端静态文件
@@ -218,7 +213,7 @@ type APIResponse[T any] struct {
 
 - YAML 配置文件：`config/config.yml`（通过 `helpers.InitConfig()` 加载）
 - 敏感信息：`config/.env`（通过 `helpers.LoadEnvFromFile()` 加载）
-- 构建时注入：API 密钥通过 `-ldflags -X main.FANART_API_KEY=...` 注入
+- 构建时注入：OAuth state 加密密钥通过 `-ldflags -X main.ENCRYPTION_KEY=...` 注入
 - 全局配置对象：`helpers.GlobalConfig`
 
 ## 日志规范
@@ -233,13 +228,13 @@ helpers.V115Log.Debugf("115请求详情: %s", url)
 
 日志级别：`Infof`, `Warnf`, `Errorf`, `Debugf`, `Fatalf`
 
-按子系统使用不同 logger：`AppLogger`（主日志）、`V115Log`、`OpenListLog`、`BaiduPanLog`、`TMDBLog`
+按子系统使用不同 logger：`AppLogger`（主日志）、`V115Log`、`OpenListLog`、`BaiduPanLog`
 
 ## 测试约定
 
 - 使用 table-driven 测试模式
 - 测试名称使用中文描述：`TestOldSyntax_BasicMovie`
-- 测试文件位于对应包目录下：`internal/helpers/extract_test.go`
+- 测试文件位于对应包目录下（如 `internal/helpers/string_test.go`）
 
 ## CI/CD
 

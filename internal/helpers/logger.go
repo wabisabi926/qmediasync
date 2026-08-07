@@ -14,7 +14,6 @@ var AppLogger *QLogger
 var V115Log *QLogger
 var OpenListLog *QLogger
 var BaiduPanLog *QLogger
-var TMDBLog *QLogger
 
 type QLogger struct {
 	*log.Logger
@@ -134,9 +133,6 @@ func CloseLogger() {
 	if OpenListLog != nil && OpenListLog.lumLogger != nil {
 		OpenListLog.lumLogger.Close()
 	}
-	if TMDBLog != nil && TMDBLog.lumLogger != nil {
-		TMDBLog.lumLogger.Close()
-	}
 	fmt.Println("已关闭所有日志记录器")
 }
 
@@ -149,9 +145,6 @@ func RotateLog() {
 	}
 	if OpenListLog != nil && OpenListLog.rotate {
 		OpenListLog.lumLogger.Rotate()
-	}
-	if TMDBLog != nil && TMDBLog.rotate {
-		TMDBLog.lumLogger.Rotate()
 	}
 	fmt.Println("已轮转所有日志文件")
 }
