@@ -25,9 +25,12 @@ CGO_ENABLED=0 go build -ldflags="-s -w -X main.Version=v1.0.0 -X 'main.PublishDa
 # 下载依赖
 go mod tidy
 
-# 跨平台构建（参见 build_scripts/build_and_release.sh）
+# 跨平台构建（正式发布由 GitHub Actions 自动完成）
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o QMediaSync.exe .
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o QMediaSync .
+
+# 正式发布：推送 tag 触发 GitHub Actions 全自动构建
+bash build_scripts/build_and_release.sh -v vX.X.X
 
 # Docker 构建
 docker build -t qmediasync .
@@ -92,7 +95,7 @@ emby302/                 # 嵌入的 Emby 302 代理子项目
 openxpanapi/             # 自动生成的百度网盘 OpenAPI 客户端
 web_statics/             # 前端静态文件
 scripts/                 # 运行时脚本（docker-entrypoint 等）
-build_scripts/           # 构建与发布脚本
+build_scripts/           # 发布辅助脚本（打 tag 触发 GitHub Actions）
 ```
 
 ## 导入顺序
@@ -238,7 +241,11 @@ helpers.V115Log.Debugf("115请求详情: %s", url)
 
 ## CI/CD
 
-- **feature 分支** 推送触发构建 → Docker 镜像 `qmediasync:<branch-name>`
-- **dev 分支** 推送触发构建 → Docker 镜像 `qmediasync:beta`
-- 正式发布通过 `build_scripts/build_and_release.sh` 手动执行
-- 变更日志使用 Changie（`.changes/` 目录）
+- **feature 分支** 推送 → Docker 镜像 `qicfan/qmediasync:<branch-name>`（feature.yml）
+- **dev 分支** 推送 → Docker 镜像 `qicfan/qmediasync:beta`（beta.yml）
+- **正式发布**：编写 `.changes/vX.X.X.md` 中文更新日志 → 执行 `bash build_scripts/build_and_release.sh -v vX.X.X` → GitHub Actions 全自动构建并发布：
+  - Windows/Linux 双平台二进制
+  - 飞牛 FPK（amd64 + arm64）
+  - Docker 多架构镜像（linux/amd64, linux/arm64）
+  - GitHub Release（自动读取 `.changes/vX.X.X.md` 作为更新日志）
+- 变更日志存放在 `.changes/` 目录，文件名格式为 `vX.X.X.md`

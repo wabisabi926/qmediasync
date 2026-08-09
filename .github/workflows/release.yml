@@ -128,10 +128,24 @@ jobs:
           secrets: |
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
+      - name: 读取更新日志
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          NOTES_FILE=".changes/${TAG}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            cp "$NOTES_FILE" release_notes.md
+            echo "找到更新日志: $NOTES_FILE"
+          else
+            echo "未找到 .changes/${TAG}.md，使用默认日志"
+            echo "Release ${TAG}" > release_notes.md
+          fi
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
+          body_path: release_notes.md
           draft: false
           prerelease: false
           files: |
