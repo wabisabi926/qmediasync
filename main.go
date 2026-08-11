@@ -541,6 +541,8 @@ func setRouter(r *gin.Engine) {
 		api.GET("/baidupan/oauth-url", controllers.GetBaiDuPanOAuthUrl)           // 获取百度网盘OAuth登录地址
 		api.POST("/baidupan/oauth-confirm", controllers.ConfirmBaiDuPanOAuthCode) // 确认百度网盘OAuth登录
 		api.GET("/baidupan/status", controllers.GetBaiDuPanStatus)                // 查询百度网盘状态
+		api.GET("/path/list", controllers.GetPathList)                            // 获取目录列表（来源/目标路径选择对话框）
+		api.POST("/path/create", controllers.CreateDir)                           // 创建目录（对话框新建文件夹按钮）
 
 		api.GET("/user/info", controllers.GetUserInfo)
 		api.POST("/user/change", controllers.ChangePassword)

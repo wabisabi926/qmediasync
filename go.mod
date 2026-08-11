@@ -13,6 +13,7 @@ require (
 	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
 	github.com/mozillazg/go-pinyin v0.21.0
 	github.com/robfig/cron/v3 v3.0.0
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	golang.org/x/crypto v0.42.0
 	golang.org/x/time v0.8.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -23,6 +24,7 @@ require (
 )
 
 require (
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
@@ -30,6 +32,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )
 
