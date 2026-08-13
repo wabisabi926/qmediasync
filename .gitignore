@@ -1,23 +1,14 @@
 *.log
 go.sum
 frontend/node_modules/
-config/logs/*
-config/config.yml
-config/115-cookies.txt
-config/tmp/*
+# 忽略整个 config 配置文件夹（包含个人配置、数据库、日志、cookies、临时文件等）
+config/
 *.tmp
 *.bak
 Q115-STRM.exe
-config/db.db
-config/db.db-journal
-config/libs/*
-config/logs/*
-config/logs/filepath*
-config/tmp/*
 *_README.md
 dist/*
 temp_build/*
-/config/postgres
 update/*
 QMediaSync.exe
 QMediaSync.exe
@@ -28,15 +19,12 @@ release_body.txt
 test_guid.sh
 q115strm_test.exe
 q115strm.exe
-/config/backups
 docs/FeHelper-20260123203742.json
-config/.env
 postgres/
 scripts/test_share_link.go
 scripts/test_delta_sync.go
 docs/sharepoint_azure_setup.md
 docs/sharepoint_usage.md
-config/qmediasync.db
 *.fpk
 *.DS_Store
 test/
@@ -48,9 +36,6 @@ FNOS/qmediasync-arm64/app/web_statics/
 FNOS/qmediasync-amd64/app/web_statics/
 FNOS/qmediasync-amd64/app/QMediaSync
 Q115-STRM
-config/qmediasync.db-shm
-config/qmediasync.db-wal
-config/config - 副本.yml
 QMediaSync
 *.mp4
 ./docs/design/*
