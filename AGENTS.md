@@ -241,8 +241,8 @@ helpers.V115Log.Debugf("115请求详情: %s", url)
 
 ## CI/CD
 
-- **feature 分支** 推送 → Docker 镜像 `qicfan/qmediasync:<branch-name>`（feature.yml）
-- **dev 分支** 推送 → Docker 镜像 `qicfan/qmediasync:beta`（beta.yml）
+- **feature 分支** 推送 → Docker 镜像 `wabisabi926/qmediasync:<branch-name>`（feature.yml）
+- **dev 分支** 推送 → Docker 镜像 `wabisabi926/qmediasync:beta`（beta.yml）
 - **正式发布**：编写 `.changes/vX.X.X.md` 中文更新日志 → 执行 `bash build_scripts/build_and_release.sh -v vX.X.X` → GitHub Actions 全自动构建并发布：
   - Windows/Linux 双平台二进制
   - 飞牛 FPK（amd64 + arm64）

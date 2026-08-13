@@ -1,7 +1,7 @@
 # QMediaSync
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/qicfan/qmediasync)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/qicfan/qmediasync)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/wabisabi926/qmediasync)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wabisabi926/qmediasync)
 
 #### 本魔改项目基于个人需求，基于原项目做的精简，仅限于本人使用，请支持原作者，非常简单好用的项目。
 
@@ -31,7 +31,7 @@
 - **默认用户名 admin,密码 admin123**
 - 默认端口：http-12333   https-12332
 - emby 代理端口默认：http-8095  https-8094
-- 其他见 [wiki](https://github.com/qicfan/qmediasync/wiki)
+- 其他见 [wiki](https://github.com/wabisabi926/qmediasync/wiki)
 
 ## 调试启动
 
@@ -57,7 +57,7 @@ sudo ./build_and_release.sh -v vx.xx.xx
 
 ## 数据库
 
-开源版本不包含 postgres 数据库二进制文件，需要自己安装，建议版本 15.x，然后配置环境变量使用。详见 wiki 中的[安装](https://github.com/qicfan/qmediasync/wiki/Linux-%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8)
+开源版本不包含 postgres 数据库二进制文件，需要自己安装，建议版本 15.x，然后配置环境变量使用。详见 wiki 中的[安装](https://github.com/wabisabi926/qmediasync/wiki/Linux-%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8)
 
 ## 需要自备的密钥
 
@@ -67,15 +67,15 @@ sudo ./build_and_release.sh -v vx.xx.xx
 
 ## 配套前端
 
-- [QMediaSync-Frontend](https://github.com/qicfan/q115-strm-frontend)
+- [QMediaSync-Frontend](https://github.com/wabisabi926/q115-strm-frontend)
 
 ## 贡献者
 
-![Contributors](https://contrib.rocks/image?repo=qicfan/qmediasync)
+![Contributors](https://contrib.rocks/image?repo=wabisabi926/qmediasync)
 
 ## Star
 
-![Star History](https://api.star-history.com/svg?repos=qicfan/qmediasync&type=Date)
+![Star History](https://api.star-history.com/svg?repos=wabisabi926/qmediasync&type=Date)
 
 ## 请作者喝杯咖啡
 

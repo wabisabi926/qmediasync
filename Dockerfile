@@ -1,5 +1,5 @@
 # 构建阶段
-FROM qicfan/qms-build-base:latest AS builder
+FROM wabisabi926/qms-build-base:latest AS builder
 # 设置时区
 ENV TZ=Asia/Shanghai
 # 设置国内镜像源
@@ -22,7 +22,7 @@ ARG ENCRYPTION_KEY
 RUN GOOS=linux GOARCH=${TARGETARCH} go build -ldflags "-s -w -X main.Version=${VERSION} -X 'main.PublishDate=${BUILD_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync .
 
 # 运行阶段
-FROM qicfan/qms-build-base:latest
+FROM wabisabi926/qms-build-base:latest
 # 设置时区
 ENV TZ=Asia/Shanghai
 ENV PATH=/app:$PATH
