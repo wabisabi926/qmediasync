@@ -1,4 +1,4 @@
-FROM wabisabi926/qms-build-base:beta
+FROM qicfan/qms-build-base:beta
 ENV TZ=Asia/Shanghai
 ENV PATH=/app:$PATH
 ENV DB_HOST=localhost
