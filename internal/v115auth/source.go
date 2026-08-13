@@ -141,9 +141,10 @@ func ParseAuthSource(authSourceType, authProvider, appID, appIDName string) Auth
 func parseLegacyAuthSource(appID, appIDName string) AuthSource {
 	if appID != "" {
 		if item, ok := GetBuiltInAppID(appID); ok {
+			// 对 QMediaSync/Q115-STRM 统一按内置 APP ID 走 PKCE 扫码授权（中转已失效）
 			return AuthSource{
 				Type:      AuthSourceTypeBuiltInAppID,
-				Provider:  item.Provider,
+				Provider:  AuthProviderOfficialPKCE,
 				AppID:     appID,
 				AppIDName: item.DisplayName,
 			}
@@ -156,25 +157,27 @@ func parseLegacyAuthSource(appID, appIDName string) AuthSource {
 		}
 	}
 
+	// 仅按名字选择的 legacy 记录，改成 PKCE 模式
 	switch strings.TrimSpace(appIDName) {
 	case "QMediaSync":
 		return AuthSource{
-			Type:      AuthSourceTypeBuiltInRelay,
-			Provider:  AuthProviderQMediaSync,
+			Type:      AuthSourceTypeBuiltInAppID,
+			Provider:  AuthProviderOfficialPKCE,
 			AppID:     "100197849",
 			AppIDName: "QMediaSync",
 		}
 	case "Q115-STRM":
 		return AuthSource{
-			Type:      AuthSourceTypeBuiltInRelay,
-			Provider:  AuthProviderMQFamily,
-			AppID:     appID,
-			AppIDName: appIDName,
+			Type:      AuthSourceTypeBuiltInAppID,
+			Provider:  AuthProviderOfficialPKCE,
+			AppID:     "100197665",
+			AppIDName: "Q115-STRM",
 		}
 	default:
 		return AuthSource{
-			Type:      AuthSourceTypeBuiltInRelay,
-			Provider:  AuthProviderQMediaSync,
+			Type:      AuthSourceTypeBuiltInAppID,
+			Provider:  AuthProviderOfficialPKCE,
+			AppID:     "100197849",
 			AppIDName: "QMediaSync",
 		}
 	}
@@ -184,8 +187,26 @@ func (s AuthSource) SupportsPKCE() bool {
 	return s.Type == AuthSourceTypeBuiltInAppID || s.Type == AuthSourceTypeCustomAppID
 }
 
+// relayDisabledProviders 中转已失效的内置 provider（网页授权不再支持，仅保留扫码 PKCE）
+var relayDisabledProviders = map[AuthProvider]bool{
+	AuthProviderQMediaSync: true,
+	AuthProviderMQFamily:   true,
+}
+
 func (s AuthSource) SupportsOAuth() bool {
-	return s.Type == AuthSourceTypeBuiltInRelay || s.Type == AuthSourceTypeThirdPartyService
+	if s.Type != AuthSourceTypeBuiltInRelay && s.Type != AuthSourceTypeThirdPartyService {
+		return false
+	}
+	// 屏蔽已失效的内置中转授权服务
+	if relayDisabledProviders[s.Provider] {
+		return false
+	}
+	return true
+}
+
+// DisabledBuiltInRelay 返回当前 provider 是否已禁用网页中继授权
+func DisabledBuiltInRelay(provider AuthProvider) bool {
+	return relayDisabledProviders[provider]
 }
 
 func SearchAppIDs(keyword string, offset, limit int) ([]BuiltInAppIDItem, int, error) {

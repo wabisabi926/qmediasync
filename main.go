@@ -35,8 +35,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Version string = "v0.15.07"
-var PublishDate string = "2026-07-19"
+var Version string = "v0.16.5"
+var PublishDate string = "2026-08-13"
 var ENCRYPTION_KEY = ""
 
 var AppName string = "QMediaSync"

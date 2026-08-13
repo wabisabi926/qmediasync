@@ -54,3 +54,7 @@ config/config - 副本.yml
 QMediaSync
 *.mp4
 ./docs/design/*
+# 本地辅助脚本：本地打包脚本等
+build_local*
+*.local.sh
+*.local.ps1

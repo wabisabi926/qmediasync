@@ -2,6 +2,16 @@
 
 
 
+v0.16.5 - 2026-08-13
+
+- 停用 QMediaSync/Q115-STRM 内置中转网页授权（已失效），统一引导用户使用 PKCE 扫码授权
+- 前端「网页授权」下拉框移除 QMediaSync、Q115-STRM 选项，仅保留 MoviePilot、CloudDrive 第三方服务
+- GetOAuthUrl/ConfirmOAuthCode 在检测到失效的中转授权时，返回明确的迁移指引文案
+- parseLegacyAuthSource 对历史账号统一按内置 APP ID 走 PKCE 扫码授权，避免继续命中已失效的中转分支
+- 新增 DisabledBuiltInRelay 判断，SupportsOAuth 屏蔽已失效的内置中转 provider
+- .gitignore 补充忽略 lib/（ffmpeg 自动下载目录）及本地辅助脚本
+
+
 v0.16.0 - 2026-07-31
 
 - 新增飞牛影视反代功能，解决 senplayer、爆米花、vidhub 等播放器无法播放飞牛添加的 STRM 文件的问题

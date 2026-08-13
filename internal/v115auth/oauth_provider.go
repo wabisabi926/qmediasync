@@ -50,13 +50,12 @@ var errUnsupportedOAuthOperation = fmt.Errorf("当前授权服务不支持此操
 
 func GetOAuthProvider(provider AuthProvider) (OAuthProvider, bool) {
 	switch provider {
-	case AuthProviderQMediaSync, AuthProviderMQFamily:
-		return relayOAuthProvider{}, true
 	case AuthProviderMoviePilot:
 		return moviePilotOAuthProvider{authServer: "https://movie-pilot.org", client: defaultOAuthHTTPClient()}, true
 	case AuthProviderCloudDrive:
 		return cloudDriveOAuthProvider{}, true
 	default:
+		// AuthProviderQMediaSync / AuthProviderMQFamily 的内置中转授权已停用，统一引导用户使用扫码授权
 		return nil, false
 	}
 }

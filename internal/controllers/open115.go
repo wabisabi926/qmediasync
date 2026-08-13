@@ -397,13 +397,23 @@ func GetOAuthUrl(c *gin.Context) {
 
 	authSource := account.V115AuthSource()
 	if !authSource.SupportsOAuth() {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "当前授权方式不支持网页授权", Data: nil})
+		msg := "当前授权方式不支持网页授权"
+		if v115auth.DisabledBuiltInRelay(authSource.Provider) ||
+			authSource.AppID == "100197849" ||
+			authSource.AppID == "100197665" {
+			msg = "QMediaSync/Q115-STRM 内置中转网页授权已失效，请删除该账号后使用「扫码授权」重新添加"
+		}
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: msg, Data: nil})
 		return
 	}
 
 	provider, ok := v115auth.GetOAuthProvider(authSource.Provider)
 	if !ok {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "不支持的授权提供者", Data: nil})
+		msg := "不支持的授权提供者"
+		if v115auth.DisabledBuiltInRelay(authSource.Provider) {
+			msg = "QMediaSync/Q115-STRM 内置中转网页授权已失效，请删除该账号后使用「扫码授权」重新添加"
+		}
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: msg, Data: nil})
 		return
 	}
 
@@ -455,13 +465,23 @@ func ConfirmOAuthCode(c *gin.Context) {
 
 	authSource := account.V115AuthSource()
 	if !authSource.SupportsOAuth() {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "当前授权方式不支持网页授权", Data: nil})
+		msg := "当前授权方式不支持网页授权"
+		if v115auth.DisabledBuiltInRelay(authSource.Provider) ||
+			authSource.AppID == "100197849" ||
+			authSource.AppID == "100197665" {
+			msg = "QMediaSync/Q115-STRM 内置中转网页授权已失效，请删除该账号后使用「扫码授权」重新添加"
+		}
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: msg, Data: nil})
 		return
 	}
 
 	provider, ok := v115auth.GetOAuthProvider(authSource.Provider)
 	if !ok {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "不支持的授权提供者", Data: nil})
+		msg := "不支持的授权提供者"
+		if v115auth.DisabledBuiltInRelay(authSource.Provider) {
+			msg = "QMediaSync/Q115-STRM 内置中转网页授权已失效，请删除该账号后使用「扫码授权」重新添加"
+		}
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: msg, Data: nil})
 		return
 	}
 
