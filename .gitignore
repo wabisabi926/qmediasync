@@ -42,4 +42,5 @@ QMediaSync
 # 本地辅助脚本：本地打包脚本等
 build_local*
 *.local.sh
+frontend/
 *.local.ps1
