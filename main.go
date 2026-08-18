@@ -35,7 +35,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Version string = "v0.16.6"
+var Version string = "v0.16.7"
 var PublishDate string = "2026-08-17"
 var ENCRYPTION_KEY = ""
 
