@@ -1,11 +1,14 @@
 # 构建阶段
-FROM wabisabi926/qms-build-base:latest AS builder
+FROM golang:alpine AS builder
 # 设置时区
 ENV TZ=Asia/Shanghai
 # 设置国内镜像源
 ENV GOPROXY=https://goproxy.cn,direct \
     GOSUMDB=off \
     CGO_ENABLED=0
+
+# 安装 git（go mod 需要）
+RUN apk add --no-cache git
 
 # 设置工作目录
 WORKDIR /app
@@ -22,7 +25,9 @@ ARG ENCRYPTION_KEY
 RUN GOOS=linux GOARCH=${TARGETARCH} go build -ldflags "-s -w -X main.Version=${VERSION} -X 'main.PublishDate=${BUILD_DATE}' -X main.ENCRYPTION_KEY=${ENCRYPTION_KEY}" -o QMediaSync .
 
 # 运行阶段
-FROM wabisabi926/qms-build-base:latest
+FROM alpine:latest
+# 安装运行时依赖
+RUN apk add --no-cache sudo tzdata ca-certificates
 # 设置时区
 ENV TZ=Asia/Shanghai
 ENV PATH=/app:$PATH
@@ -48,11 +53,6 @@ WORKDIR /app
 COPY --from=builder /app/QMediaSync .
 COPY --from=builder /app/web_statics ./web_statics/
 COPY --from=builder /app/scripts ./scripts/
-# COPY --from=builder /app/icon.ico .
-# COPY QMediaSync .
-# COPY web_statics ./web_statics/
-# COPY scripts ./scripts/
-# COPY icon.ico .
 RUN chmod +x /app/scripts/docker-entrypoint.sh
 RUN chmod +x /app/scripts/watch_update.sh
 RUN chmod +x /app/QMediaSync

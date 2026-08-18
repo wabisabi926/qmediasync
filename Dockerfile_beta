@@ -1,4 +1,6 @@
-FROM wabisabi926/qms-build-base:beta
+FROM alpine:latest
+# 安装运行时依赖
+RUN apk add --no-cache sudo tzdata ca-certificates
 ENV TZ=Asia/Shanghai
 ENV PATH=/app:$PATH
 ENV DB_HOST=localhost
