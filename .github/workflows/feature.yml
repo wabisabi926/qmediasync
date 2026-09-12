@@ -48,5 +48,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/qmediasync:${{ steps.branch.outputs.name }}
           file: Dockerfile_beta
           platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           secrets: |
             GITHUB_TOKEN=${{ secrets.RELEASE_TOKEN }}
