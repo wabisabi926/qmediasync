@@ -67,11 +67,6 @@ func (w *EmbyPlaybackWebhook) GetDeviceName() string {
 	return w.Session.DeviceName
 }
 
-// GetClientName 获取客户端名称
-func (w *EmbyPlaybackWebhook) GetClientName() string {
-	return w.Session.Client
-}
-
 // GetPlaybackDuration 获取播放时长（毫秒，仅Stop事件）
 func (w *EmbyPlaybackWebhook) GetPlaybackDuration() int64 {
 	if w.Event != "playback.stop" {

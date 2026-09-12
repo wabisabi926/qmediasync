@@ -737,8 +737,11 @@ func createPlaybackNotification(webhook *models.EmbyPlaybackWebhook) *notificati
 func formatPlaybackNotificationContent(webhook *models.EmbyPlaybackWebhook) string {
 	var buf bytes.Buffer
 
+	// 标题与正文之间空一行
+	fmt.Fprintln(&buf)
+
 	fmt.Fprintf(&buf, "用户：%s\n", webhook.GetUserName())
-	fmt.Fprintf(&buf, "设备：%s (%s)\n", webhook.GetDeviceName(), webhook.GetClientName())
+	fmt.Fprintf(&buf, "设备：%s\n", webhook.GetDeviceName())
 	// buf.WriteString(webhook.Item.Name)
 	if webhook.Item.Type == "Episode" {
 		fmt.Fprintf(&buf, "电视剧：%s\n", webhook.Item.SeriesName)
@@ -777,7 +780,7 @@ func formatPlaybackNotificationContent(webhook *models.EmbyPlaybackWebhook) stri
 			if len(runes) > 100 {
 				overview = string(runes[:100]) + "..."
 			}
-			fmt.Fprintf(&buf, "简介：%s\n", overview)
+			fmt.Fprintf(&buf, "\n简介：%s\n", overview)
 		}
 	}
 
