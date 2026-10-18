@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func (s *SyncStrm) checkPathExists(path string) bool {
@@ -24,13 +23,13 @@ func (s *SyncStrm) GetLocalBaseDir() string {
 }
 
 func (s *SyncStrm) MakeFullLocalPath(file *models.SyncFile) string {
-	// 视频文件要转成strm扩展名
+	// 视频文件要转成strm扩展名，ISO 可按设置生成 xxx.iso.strm
 	fileName := file.FileName
 	if file.IsVideo {
-		ext := filepath.Ext(fileName)
-		baseName := strings.TrimSuffix(fileName, ext)
-		fileName = baseName + ".strm"
+		fileName = helpers.StrmFileName(file.FileName, models.SettingsGlobal.ISOFilename == 1)
 	}
+	// Windows 下清理非法字符，与其他路径计算保持一致；其他平台原样返回
+	fileName = helpers.SanitizeFileName(fileName)
 	fullPath := filepath.Join(s.TargetPath, file.Path, fileName)
 	if s.Account.SourceType == models.SourceTypeLocal {
 		// 本地不能拼接完整的file.Path
@@ -38,7 +37,9 @@ func (s *SyncStrm) MakeFullLocalPath(file *models.SyncFile) string {
 		if err != nil {
 			return ""
 		}
-		fullPath = filepath.Join(s.TargetPath, relPath, fileName)
+		fullPath = filepath.Join(s.TargetPath, helpers.SanitizeRelPath(relPath), fileName)
+	} else {
+		fullPath = filepath.Join(s.TargetPath, helpers.SanitizeRelPath(file.Path), fileName)
 	}
 	// 将windows路径转换为unix路径
 	fullPath = filepath.ToSlash(fullPath)

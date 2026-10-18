@@ -6,6 +6,7 @@ import (
 	"Q115-STRM/internal/v115open"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -123,6 +124,26 @@ func ValidateJWT(tokenString string) (*LoginUser, error) {
 	return claims, nil
 }
 
+// proxy115Client 网盘 CDN 反代专用客户端。
+// 不设置 Client.Timeout：该超时包含读取响应体的耗时，会让长视频播放到 60 秒被强制断开。
+// 改为在 Transport 上限制「等待响应头」的时间，既能兜住上游无响应，又不会打断长连接传输。
+// 复用同一个 Transport 让连接池生效，播放器频繁发起 Range 请求时不必反复建连。
+var proxy115Client = &http.Client{
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   16,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
+
 func Proxy115(c *gin.Context) {
 	// 获取原始url参数
 	target := c.Request.URL.Query().Get("url")
@@ -137,8 +158,8 @@ func Proxy115(c *gin.Context) {
 	// 	c.JSON(http.StatusForbidden, APIResponse[any]{Code: BadRequest, Message: "只允许反代115CDN链接", Data: nil})
 	// 	return
 	// }
-	// 创建请求
-	req, err := http.NewRequest("GET", target, nil)
+	// 创建请求，绑定客户端 context：播放器断开或 seek 时能及时释放上游连接
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", target, nil)
 	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请求创建失败", Data: nil})
 		return
@@ -156,8 +177,7 @@ func Proxy115(c *gin.Context) {
 		req.Header.Set("User-Agent", v115open.DEFAULTUA)
 	}
 	// 发起请求
-	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := proxy115Client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, APIResponse[any]{Code: BadRequest, Message: "反代请求失败: " + err.Error(), Data: nil})
 		return

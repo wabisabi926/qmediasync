@@ -6,7 +6,6 @@ import (
 	"Q115-STRM/internal/v115open"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -112,26 +111,33 @@ func (b *SyncFileCache) GetLocalFilePath(targetPath, sourcePath string) string {
 	if b.LocalFilePath != "" {
 		return b.LocalFilePath
 	}
+	b.LocalFilePath = b.LocalFilePathFor(targetPath, sourcePath, models.SettingsGlobal.ISOFilename == 1)
+	return b.LocalFilePath
+}
+
+// LocalFilePathFor 按指定的 ISO 命名规则生成本地路径，且不写入缓存。
+// 用于开关切换后定位「另一种命名规则」下的旧文件，便于迁移。
+func (b *SyncFileCache) LocalFilePathFor(targetPath, sourcePath string, isoFilename bool) string {
 	// 视频文件要转成strm扩展名
 	fileName := b.FileName
 	if b.IsVideo {
-		ext := filepath.Ext(fileName)
-		baseName := strings.TrimSuffix(fileName, ext)
-		fileName = baseName + ".strm"
+		fileName = helpers.StrmFileName(b.FileName, isoFilename)
 	}
-	fullPath := filepath.Join(targetPath, b.GetPath(), fileName)
+	// Windows 下清理非法字符，否则含 : ? * 等字符的片名会写入失败；其他平台原样返回
+	fileName = helpers.SanitizeFileName(fileName)
+	var fullPath string
 	if b.SourceType == models.SourceTypeLocal {
 		// 本地不能拼接完整的file.Path
 		relPath, err := filepath.Rel(sourcePath, b.GetPath())
 		if err != nil {
 			return ""
 		}
-		fullPath = filepath.Join(targetPath, relPath, fileName)
+		fullPath = filepath.Join(targetPath, helpers.SanitizeRelPath(relPath), fileName)
+	} else {
+		fullPath = filepath.Join(targetPath, helpers.SanitizeRelPath(b.GetPath()), fileName)
 	}
 	// 将windows路径转换为unix路径
-	fullPath = filepath.ToSlash(fullPath)
-	b.LocalFilePath = fullPath
-	return b.LocalFilePath
+	return filepath.ToSlash(fullPath)
 }
 
 // 将SyncFileCache转换为models.SyncFile

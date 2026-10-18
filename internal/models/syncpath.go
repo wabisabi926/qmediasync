@@ -276,20 +276,16 @@ func (sp *SyncPath) IsValidMetaExt(name string) bool {
 
 func (sp *SyncPath) MakeFullLocalPath(pid, name string) string {
 	if sp.IsValidVideoExt(name) {
-		// 视频文件要转成.strm文件
-		ext := filepath.Ext(name)
-		baseName := strings.TrimSuffix(name, ext)
-		// if ext == ".iso" {
-		// 	name = name + ".strm"
-		// } else {
-		name = baseName + ".strm"
-		// }
+		// 视频文件要转成 .strm；开启 ISO 兼容时 ISO 原盘生成 xxx.iso.strm，便于 Emby/Infuse 识别
+		name = helpers.StrmFileName(name, SettingsGlobal.ISOFilename == 1)
 	}
+	// Windows 下清理非法字符，与 syncstrm 的路径计算保持一致；其他平台原样返回
+	name = helpers.SanitizeFileName(name)
 	switch sp.SourceType {
 	case SourceType115:
-		return filepath.Join(sp.LocalPath, sp.RemotePath, pid, name)
+		return filepath.Join(sp.LocalPath, helpers.SanitizeRelPath(sp.RemotePath), helpers.SanitizeRelPath(pid), name)
 	case SourceTypeOpenList:
-		return filepath.Join(sp.LocalPath, pid, name)
+		return filepath.Join(sp.LocalPath, helpers.SanitizeRelPath(pid), name)
 	case SourceTypeLocal:
 		return filepath.Join(sp.LocalPath, pid, name)
 	}

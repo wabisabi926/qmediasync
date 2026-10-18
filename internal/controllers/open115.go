@@ -216,8 +216,16 @@ func Get115UrlByPickCode(c *gin.Context) {
 				return
 			}
 			helpers.AppLogger.Infof("从接口中查询到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
-			// 缓存50分钟
-			db.Cache.Set(cacheKey, []byte(cachedUrl), 3000)
+			// 缓存时长按链接自带的 t 参数推导，提前 5 分钟过期，避免用到即将失效的链接
+			cacheTTL := int64(3000)
+			if expire := parseDownloadUrlExpire(cachedUrl); expire > 0 {
+				if remain := expire - time.Now().Unix() - 300; remain > 0 {
+					cacheTTL = remain
+				} else {
+					cacheTTL = 60
+				}
+			}
+			db.Cache.Set(cacheKey, []byte(cachedUrl), int(cacheTTL))
 		}
 		if req.Force == 0 {
 			if models.SettingsGlobal.LocalProxy == 1 {
@@ -234,6 +242,20 @@ func Get115UrlByPickCode(c *gin.Context) {
 			c.Redirect(http.StatusFound, cachedUrl)
 		}
 	}
+}
+
+// parseDownloadUrlExpire 从下载链接的 t 参数解析过期时间戳（秒）。
+// 115 直链 URL 中的 t 是绝对秒级时间戳，返回 0 表示解析失败或不存在。
+func parseDownloadUrlExpire(rawUrl string) int64 {
+	u, err := url.Parse(rawUrl)
+	if err != nil {
+		return 0
+	}
+	t, err := strconv.ParseInt(u.Query().Get("t"), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return t
 }
 
 // GetLoginQrCodeOpen 获取115开放平台登录二维码

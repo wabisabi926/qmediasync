@@ -24,6 +24,8 @@ type StrmData struct {
 // 生成strm文件
 // st只能是来源路径，所以需要生成strm文件的路径
 func (s *SyncStrm) ProcessStrmFile(sf *SyncFileCache) error {
+	// 开关切换后，把另一种命名规则的旧 ISO strm 文件迁移掉，避免 Emby 里出现重复条目
+	s.migrateLegacyISOFilename(sf)
 	rs := s.CompareStrm(sf)
 	if rs == 1 {
 		// s.Sync.Logger.Infof("文件 %s 已存在且无需更新strm文件，跳过", filepath.Join(sf.Path, sf.FileName))
@@ -31,6 +33,11 @@ func (s *SyncStrm) ProcessStrmFile(sf *SyncFileCache) error {
 	}
 	// localFilePath := sf.GetLocalFilePath()
 	strmFullPath := sf.GetLocalFilePath(s.TargetPath, s.SourcePath)
+	// 超长路径无法落盘，直接跳过并记录明确原因
+	if oversized := helpers.OversizedPathComponent(strmFullPath); oversized != "" {
+		s.Sync.Logger.Warnf("strm 路径超长已跳过（单段最多 %d 字节）: %s", helpers.MaxPathComponentBytes, strmFullPath)
+		return nil
+	}
 	strmContent := s.SyncDriver.MakeStrmContent(sf)
 	if strmContent == "" {
 		s.Sync.Logger.Errorf("生成strm文件内容失败，可能是STRM直连地址格式不正确: %s", filepath.Join(sf.Path, sf.FileName))
@@ -143,7 +150,39 @@ func (s *SyncStrm) CompareStrm(st *SyncFileCache) int {
 	return 1
 }
 
-// 解析strm文件内url的参数并返回
+// migrateLegacyISOFilename 在 ISO 文件名兼容开关切换后，迁移旧命名规则的 strm 文件。
+// 开启开关时把 xxx.strm 迁移为 xxx.iso.strm；关闭时反向迁移。
+// 避免同一个 ISO 在 Emby 里出现两个条目。
+func (s *SyncStrm) migrateLegacyISOFilename(sf *SyncFileCache) {
+	if !sf.IsVideo || !strings.EqualFold(filepath.Ext(sf.FileName), ".iso") {
+		return
+	}
+	enabled := models.SettingsGlobal.ISOFilename == 1
+	currentPath := sf.GetLocalFilePath(s.TargetPath, s.SourcePath)
+	// 另一种命名规则下的旧路径
+	legacyPath := sf.LocalFilePathFor(s.TargetPath, s.SourcePath, !enabled)
+	if legacyPath == "" || currentPath == "" || legacyPath == currentPath {
+		return
+	}
+	if !helpers.PathExists(legacyPath) {
+		return
+	}
+	// 新文件已存在时，直接删掉旧文件
+	if helpers.PathExists(currentPath) {
+		if err := os.Remove(legacyPath); err != nil {
+			s.Sync.Logger.Warnf("删除旧 ISO strm 文件失败: %s, %v", legacyPath, err)
+		} else {
+			s.Sync.Logger.Infof("已删除旧 ISO strm 文件: %s", legacyPath)
+		}
+		return
+	}
+	// 重命名迁移
+	if err := os.Rename(legacyPath, currentPath); err != nil {
+		s.Sync.Logger.Warnf("迁移旧 ISO strm 文件失败: %s => %s, %v", legacyPath, currentPath, err)
+		return
+	}
+	s.Sync.Logger.Infof("已迁移旧 ISO strm 文件: %s => %s", legacyPath, currentPath)
+}
 func (s *SyncStrm) LoadDataFromStrm(strmPath string) *StrmData {
 	if !helpers.PathExists(strmPath) {
 		// s.Sync.Logger.Errorf("strm文件不存在: %s", strmPath)

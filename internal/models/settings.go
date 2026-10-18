@@ -34,6 +34,7 @@ type SettingStrm struct {
 	DownloadMeta   int      `form:"download_meta" json:"download_meta" gorm:"default:0"`       // 是否下载元数据，-1表示使用STRM设置，0表示不下载，1表示下载
 	DeleteDir      int      `form:"delete_dir" json:"delete_dir" gorm:"default: 1"`            // 是否删除目录，-1表示使用STRM设置，0表示不删除，1表示删除
 	AddPath        int      `form:"add_path" json:"add_path" gorm:"default: 2"`                // 是否添加路径，默认-1(使用settings的值), 1- 表示添加路径， 2-表示不添加路径
+	ISOFilename    int      `form:"iso_filename" json:"iso_filename" gorm:"default:0"`         // ISO 原盘生成 xxx.iso.strm，便于 Emby/Infuse 识别为 ISO，0-不启用，1-启用
 	CheckMetaMtime int      `form:"check_meta_mtime" json:"check_meta_mtime" gorm:"default:0"` // 是否检查元数据文件修改时间，默认-1(使用settings的值), 0表示不检查，1表示检查
 }
 
@@ -72,6 +73,7 @@ func (s SettingStrm) ToMap(isDb bool, isSetting bool) map[string]any {
 		"download_meta":    s.DownloadMeta,
 		"strm_base_url":    s.StrmBaseUrl,
 		"add_path":         s.AddPath,
+		"iso_filename":     s.ISOFilename,
 		"check_meta_mtime": s.CheckMetaMtime,
 		"local_proxy":      s.LocalProxy,
 	}

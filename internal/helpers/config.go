@@ -97,7 +97,7 @@ func InitConfig() error {
 	}
 	// 给strm填充默认值
 	if len(GlobalConfig.Strm.VideoExt) == 0 {
-		GlobalConfig.Strm.VideoExt = []string{".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".ts"}
+		GlobalConfig.Strm.VideoExt = []string{".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".ts", ".iso"}
 	}
 	if len(GlobalConfig.Strm.MetaExt) == 0 {
 		GlobalConfig.Strm.MetaExt = []string{".jpg", ".jpeg", ".png", ".webp", ".nfo", ".srt", ".ass", ".svg", ".sup", ".lrc"}
@@ -237,7 +237,7 @@ func MakeDefaultConfig() *Config {
 		AdminUsername: "admin",
 		AdminPassword: "admin123",
 		Strm: ConfigStrm{
-			VideoExt:     []string{".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".ts"},
+			VideoExt:     []string{".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".ts", ".iso"},
 			MetaExt:      []string{".jpg", ".jpeg", ".png", ".webp", ".nfo", ".srt", ".ass", ".svg", ".sup", ".lrc"},
 			MinVideoSize: 100,          // 100MB
 			Cron:         "30 * * * *", // 每小时30分执行
