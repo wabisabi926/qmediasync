@@ -214,6 +214,7 @@ func GetBaiduPanUrlByPickCode(c *gin.Context) {
 	pickCode := req.PickCode
 	userId := req.UserId
 	var account *models.Account
+	strmFileName := ""
 	if userId == "" {
 		// 查询SyncFile
 		syncFile := models.GetFileByPickCode(pickCode)
@@ -221,6 +222,7 @@ func GetBaiduPanUrlByPickCode(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "文件PickCode不存在", Data: nil})
 			return
 		}
+		strmFileName = syncFile.FileName
 		var err error
 		account, err = models.GetAccountById(syncFile.AccountId)
 		if err != nil {
@@ -261,6 +263,7 @@ func GetBaiduPanUrlByPickCode(c *gin.Context) {
 		}
 		// 检查是否开启了本地播放代理，如果开启则跳转到代理链接
 		// if models.SettingsGlobal.LocalProxy == 1 {
+		setRedirectContentDisposition(c, resolveStrmFileName(c, pickCode, strmFileName))
 		// 跳转到本地代理
 		proxyUrl := fmt.Sprintf("/proxy-115?baidupan=1&url=%s", url.QueryEscape(cachedUrl))
 		helpers.AppLogger.Infof("通过本地代理访问百度网盘下载链接播放: %s", url.QueryEscape(cachedUrl))

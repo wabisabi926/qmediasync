@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -137,6 +138,54 @@ func GetFileDetail(c *gin.Context) {
 
 var keyLock KeyLockWithTimeout
 
+// setRedirectContentDisposition 为 302 重定向响应设置 Content-Disposition 文件名。
+// 按 RFC 5987 提供 filename*=UTF-8'' 编码值，便于播放器/下载工具识别中文等非 ASCII 文件名。
+func setRedirectContentDisposition(c *gin.Context, fileName string) {
+	fileName = strings.TrimSpace(fileName)
+	if fileName == "" {
+		return
+	}
+	// 取路径最后一段，兼容 path 参数携带的完整网盘路径
+	if idx := strings.LastIndexAny(fileName, "/\\"); idx >= 0 {
+		fileName = fileName[idx+1:]
+	}
+	if fileName == "" {
+		return
+	}
+	// RFC 5987 编码：仅保留 unreserved 字符（ALPHA/DIGIT/-._~），其余百分号编码
+	var encoded strings.Builder
+	for i := 0; i < len(fileName); i++ {
+		ch := fileName[i]
+		if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ||
+			ch == '-' || ch == '.' || ch == '_' || ch == '~' {
+			encoded.WriteByte(ch)
+		} else {
+			fmt.Fprintf(&encoded, "%%%02X", ch)
+		}
+	}
+	// ASCII 回退名：非 ASCII 及引号类字符替换为下划线，供不支持 RFC 5987 的客户端兜底
+	var ascii strings.Builder
+	for _, r := range fileName {
+		if r < 0x80 && r != '"' && r != '\\' {
+			ascii.WriteRune(r)
+		} else {
+			ascii.WriteByte('_')
+		}
+	}
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", ascii.String(), encoded.String()))
+}
+
+// resolveStrmFileName 按优先级解析原始文件名：path 参数 > SyncFile.FileName > URL 通配段（仅含扩展名）
+func resolveStrmFileName(c *gin.Context, pickCode string, syncFileName string) string {
+	if p := c.Query("path"); p != "" {
+		return p
+	}
+	if syncFileName != "" {
+		return syncFileName
+	}
+	return c.Param("filename")
+}
+
 // Get115UrlByPickCode 查询115直链并重定向
 // @Summary 获取115文件直链
 // @Description 根据pickcode查询115文件直链并按需302跳转
@@ -163,6 +212,7 @@ func Get115UrlByPickCode(c *gin.Context) {
 	pickCode := req.PickCode
 	userId := req.UserId
 	var account *models.Account
+	strmFileName := ""
 	if userId == "" {
 		// 查询SyncFile
 		syncFile := models.GetFileByPickCode(pickCode)
@@ -170,6 +220,7 @@ func Get115UrlByPickCode(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "文件PickCode不存在", Data: nil})
 			return
 		}
+		strmFileName = syncFile.FileName
 		var err error
 		account, err = models.GetAccountById(syncFile.AccountId)
 		if err != nil {
@@ -227,6 +278,8 @@ func Get115UrlByPickCode(c *gin.Context) {
 			}
 			db.Cache.Set(cacheKey, []byte(cachedUrl), int(cacheTTL))
 		}
+		// helpers.AppLogger.Infof("从缓存中查询到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
+		setRedirectContentDisposition(c, resolveStrmFileName(c, pickCode, strmFileName))
 		if req.Force == 0 {
 			if models.SettingsGlobal.LocalProxy == 1 {
 				// 跳转到本地代理
